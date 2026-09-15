@@ -1,0 +1,1208 @@
+{
+  "uid": "vllm-slo",
+  "title": "vLLM — SLO",
+  "description": "The morning-triage dashboard: is the promise kept (row 1), what do users get and at what price (row 2), and if not, is the gap queue or floor (row 3). Every number's derivation is in docs/SLO.md; the reading order is docs/runbook.md, \"Morning triage\".",
+  "tags": [
+    "vllm",
+    "slo"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "schemaVersion": 39,
+  "version": 2,
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Track",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": {
+          "query": "label_values(vllm:num_requests_running, service)",
+          "refId": "svc"
+        },
+        "definition": "label_values(vllm:num_requests_running, service)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "description": "stable (`vllm`), canary (`vllm-canary`) or both. The label is stamped by Prometheus from the Service name."
+      },
+      {
+        "name": "hourly_rate",
+        "label": "Accelerator rate, $/h per replica",
+        "type": "textbox",
+        "query": "0.99",
+        "current": {
+          "selected": false,
+          "text": "0.99",
+          "value": "0.99"
+        },
+        "description": "The one input of docs/SLO.md §7 that comes from a contract, not from physics. Default: the L40S on-demand rate of runs 1–3."
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Alerts",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "expr": "ALERTS{alertstate=\"firing\"}",
+        "titleFormat": "{{alertname}}",
+        "textFormat": "{{pod}}",
+        "step": "15s",
+        "useValueForTime": false
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "Prometheus /alerts",
+      "type": "link",
+      "url": "http://localhost:9090/alerts",
+      "targetBlank": true,
+      "tooltip": "after: kubectl -n monitoring port-forward svc/prometheus 9090:9090"
+    }
+  ],
+  "panels": [
+    {
+      "id": 20,
+      "type": "text",
+      "title": "Live here, dark here — read before the numbers",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 7
+      },
+      "options": {
+        "mode": "markdown",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "**What is behind these panels may be vLLM on a GPU, or the `kind` stub — which\nexports two gauges and no histogram.** Five of sixteen panels light against the\nstub; *No data* on the rest is the stub keeping its contract, not a fault.\n\n**Live either way** — alert table · queue per replica · seats per replica ·\nreplicas scraped · scrape targets down\n\n**Needs a real engine** — TTFT/TPOT shares and percentiles · burn rate ·\ngoodput · $/1M · prefix-cache hit rate · output tokens/s · KV usage · preemptions\n\n**On `kind`, read row 3 first, then the alert table.** Row 1's numbers cannot\nreport health here, so row 3's documented entry condition — *only when row 1 is\nnot healthy* — is reachable only by an alert firing. Full reading order:\n`docs/runbook.md`, \"Morning triage\"."
+      },
+      "transparent": true
+    },
+    {
+      "id": 1,
+      "type": "row",
+      "title": "1. The promise — read this row first (docs/SLO.md §2, §4)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "TTFT inside budget, 5 m",
+      "description": "The SLI the page reads: share of requests whose first token arrived within the budget, from the engine's TTFT histogram as good over total. The histogram has an edge at 0.25 s and none at the 0.3 s target, so the 0.25 s bucket is read — stricter than the SLO by 50 ms, never looser (docs/SLO.md §4). Healthy is at or above 99 %. **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(vllm:time_to_first_token_seconds_bucket{le=\"0.25\",service=~\"$service\"}[5m])) / sum(rate(vllm:time_to_first_token_seconds_count{service=~\"$service\"}[5m]))",
+          "legendFormat": "TTFT ≤ 0.25 s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0.99
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "no series on kind"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "TPOT inside budget, 5 m",
+      "description": "Share of finished requests whose mean time per output token was within 50 ms (docs/SLO.md §2). The engine's per-request TPOT histogram has a bucket edge exactly at 0.05 s, so this number is read, not interpolated. Healthy is at or above 99 %. **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 8,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(vllm:request_time_per_output_token_seconds_bucket{le=\"0.05\",service=~\"$service\"}[5m])) / sum(rate(vllm:request_time_per_output_token_seconds_count{service=~\"$service\"}[5m]))",
+          "legendFormat": "TPOT ≤ 50 ms",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0.99
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "no series on kind"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "TTFT budget burn rate",
+      "description": "Error share over the 1 % the SLO allows, on both windows the alerting rule uses. `TTFTBudgetBurning` pages when both exceed 14.4 for 2 min: the hour says the burn is real, the five minutes say it is still happening (docs/SLO.md §4, deploy/observability/prometheus/rules.yml). 1.0 spends the 30-day budget exactly over 30 days. **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(1 - (sum(rate(vllm:time_to_first_token_seconds_bucket{le=\"0.25\",service=~\"$service\"}[1h])) / sum(rate(vllm:time_to_first_token_seconds_count{service=~\"$service\"}[1h])))) / 0.01",
+          "legendFormat": "1 h",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(1 - (sum(rate(vllm:time_to_first_token_seconds_bucket{le=\"0.25\",service=~\"$service\"}[5m])) / sum(rate(vllm:time_to_first_token_seconds_count{service=~\"$service\"}[5m])))) / 0.01",
+          "legendFormat": "5 m",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 14.4
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "no series on kind"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Alerts",
+      "description": "Every alerting rule that is pending or firing right now, with the Pod it names. There is no Alertmanager: this table and Prometheus's /alerts are the only places a page exists. `QueueBeyondTTFTBudget` naming a `vllm-canary-…` Pod is the roll-back signal; naming a stable Pod it is capacity (docs/runbook.md, \"SLO breach\"). Empty is healthy. Lights on `kind`.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 8,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (alertname, alertstate, service, pod) (ALERTS{service=~\"$service\"})",
+          "legendFormat": "",
+          "refId": "A",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true
+            },
+            "indexByName": {
+              "alertname": 0,
+              "alertstate": 1,
+              "service": 2,
+              "pod": 3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "row",
+      "title": "2. What the users get — percentiles, goodput and its price (docs/SLO.md §7)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "TTFT p50 / p99",
+      "description": "Tail and median of time to first token. The p99 is `histogram_quantile` interpolating between the 0.25 s and 0.5 s edges, so its exact value is an estimate the engine never measured — the stat above is the defensible number, this is the picture. The line is the 300 ms interactive target. **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(vllm:time_to_first_token_seconds_bucket{service=~\"$service\"}[5m])))",
+          "legendFormat": "p99",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(vllm:time_to_first_token_seconds_bucket{service=~\"$service\"}[5m])))",
+          "legendFormat": "p50",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.3
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "TPOT p50 / p99",
+      "description": "Tail and median of the per-request mean time per output token. Bucket edges at 0.025, 0.05 and 0.075 s, so a p99 near the 50 ms line is interpolated — read the stat above when it has to be defended. The line is the 50 ms interactive target; §2 explains why 50 and not 160. **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 14,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(vllm:request_time_per_output_token_seconds_bucket{service=~\"$service\"}[5m])))",
+          "legendFormat": "p99",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(vllm:request_time_per_output_token_seconds_bucket{service=~\"$service\"}[5m])))",
+          "legendFormat": "p50",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Goodput, bounded",
+      "description": "Requests per second that met their SLO — the operator's number, because it falls when latency fails while throughput keeps rising. The engine exports TTFT and TPOT as two separate histograms, so which requests met *both* is not observable server-side; what is observable is a band. Upper bound: completions × the smaller of the two good shares. Lower bound: completions × (share_TTFT + share_TPOT − 1), floored at zero. A thin band is a healthy service; the exact figure is `vllm bench serve --goodput` from the client side (docs/GLOSSARY.md). **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 14,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(vllm:request_success_total{service=~\"$service\"}[5m])) * min(label_replace(sum(rate(vllm:time_to_first_token_seconds_bucket{le=\"0.25\",service=~\"$service\"}[5m])) / sum(rate(vllm:time_to_first_token_seconds_count{service=~\"$service\"}[5m])), \"sli\", \"ttft\", \"\", \"\") or label_replace(sum(rate(vllm:request_time_per_output_token_seconds_bucket{le=\"0.05\",service=~\"$service\"}[5m])) / sum(rate(vllm:request_time_per_output_token_seconds_count{service=~\"$service\"}[5m])), \"sli\", \"tpot\", \"\", \"\"))",
+          "legendFormat": "goodput, upper bound",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(vllm:request_success_total{service=~\"$service\"}[5m])) * clamp_min((sum(rate(vllm:time_to_first_token_seconds_bucket{le=\"0.25\",service=~\"$service\"}[5m])) / sum(rate(vllm:time_to_first_token_seconds_count{service=~\"$service\"}[5m]))) + (sum(rate(vllm:request_time_per_output_token_seconds_bucket{le=\"0.05\",service=~\"$service\"}[5m])) / sum(rate(vllm:request_time_per_output_token_seconds_count{service=~\"$service\"}[5m]))) - 1, 0)",
+          "legendFormat": "goodput, lower bound",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(vllm:request_success_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "completed, any latency",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "$ per 1M output tokens",
+      "description": "docs/SLO.md §7 with the fleet's rate: `$hourly_rate` × replicas scraped, over output tokens per hour. Two denominators, and the choice is the whole figure: *all output tokens* is what a price list quotes and keeps improving after users stop being served; *SLO-respecting output tokens* counts only tokens of requests that met the SLO and is the figure this repository reports. The SLO-respecting line uses the goodput lower bound, so it is an upper bound on cost. Set `$hourly_rate` to the contract rate of the card in use; the default is the L40S on-demand rate runs 1–3 paid. **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "$hourly_rate * count(up{job=\"vllm\",service=~\"$service\"} == 1) / ((sum(rate(vllm:generation_tokens_total{service=~\"$service\"}[5m]))) * 3600) * 1e6",
+          "legendFormat": "$/1M output tokens",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "$hourly_rate * count(up{job=\"vllm\",service=~\"$service\"} == 1) / ((sum(rate(vllm:generation_tokens_total{service=~\"$service\"}[5m])) * clamp_min((sum(rate(vllm:time_to_first_token_seconds_bucket{le=\"0.25\",service=~\"$service\"}[5m])) / sum(rate(vllm:time_to_first_token_seconds_count{service=~\"$service\"}[5m]))) + (sum(rate(vllm:request_time_per_output_token_seconds_bucket{le=\"0.05\",service=~\"$service\"}[5m])) / sum(rate(vllm:request_time_per_output_token_seconds_count{service=~\"$service\"}[5m]))) - 1, 0)) * 3600) * 1e6",
+          "legendFormat": "$/1M SLO-respecting output tokens",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 3,
+          "min": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Prefix cache hit rate h, 5 m",
+      "description": "Hits over queries on the engine's prefix-cache counters — `h` in docs/SLO.md §6. It is a property of the traffic, not the hardware, and run 3 measured it as the largest single lever on the card: 12.5 seats at h = 0 against 37.8 at h = 0.8. A fall here with nothing else changed means the traffic changed. **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 6,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(vllm:prefix_cache_hits_total{service=~\"$service\"}[5m])) / sum(rate(vllm:prefix_cache_queries_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "h",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "no series on kind"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Output tokens / s",
+      "description": "Raw throughput, last on purpose: a server can look busy while every user is outside their latency target. Read it after goodput, never instead of it. **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 22,
+        "w": 6,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(vllm:generation_tokens_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "output tok/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "no series on kind"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 13,
+      "type": "row",
+      "title": "3. Where the gap is — queue or floor (docs/SLO.md §4, §6)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Queue per replica (waiting)",
+      "description": "`vllm:num_requests_waiting` per Pod — the autoscaler's input and the alert's expression. A request that is queued at all has already missed the interactive TTFT budget (docs/SLO.md §4), so the red line at 1 is the SLO, not a heuristic. Per Pod rather than summed: the scaler already reads the sum and answers it with replicas; a queue standing on one Pod after the loop has had time to act is the case the alert exists for. Lights on `kind`.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (service, pod) (vllm:num_requests_waiting{service=~\"$service\"})",
+          "legendFormat": "{{service}} {{pod}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Seats in use per replica (running)",
+      "description": "`vllm:num_requests_running` per Pod. Clipped at `max_num_seqs`, which is why it is not the scaling signal: three levels of overload look identical through it (deploy/manifests/README.md). Flat at the ceiling with a queue beside it is a capacity gap; well below the ceiling with a breach in row 1 is a floor gap. Lights on `kind`.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 31,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (service, pod) (vllm:num_requests_running{service=~\"$service\"})",
+          "legendFormat": "{{service}} {{pod}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "KV cache usage per replica",
+      "description": "`vllm:kv_cache_usage_perc`: the share of the KV pool in use. On MI300X capacity and the latency budget bind at almost the same fill, so a pool near 1.0 is not headroom to spend (docs/SLO.md §6). The pool's size in bytes is not here — it is logged once at startup, and that log outranks every derivation (docs/SLO.md §9). **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 31,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (service, pod) (vllm:kv_cache_usage_perc{service=~\"$service\"})",
+          "legendFormat": "{{service}} {{pod}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.9
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Preemptions / s",
+      "description": "Sequences evicted from the KV pool mid-generation and re-queued, per Pod. Non-zero means the pool admitted more than it could hold: the OOM that is not a crash (docs/GLOSSARY.md, docs/SLO.md §6). Each preemption is a recompute the user pays for in TPOT. **No data on `kind`**: the stub exports no histogram and no counter on purpose (deploy/manifests/README.md), so this panel lights on a card only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (service, pod) (rate(vllm:num_preemptions_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}} {{pod}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "min": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "Replicas scraped, per track",
+      "description": "Targets that answered their last scrape, by Service — `vllm` is the stable track, `vllm-canary` the canary. Read against `maxReplicaCount` (deploy/keda/): a queue standing with this at the cap is a pool with no accelerator to land on. A canary that is not here is a canary that will queue in silence (docs/runbook.md, \"Confirm it is scraped\"). Lights on `kind`.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 39,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count by (service) (up{job=\"vllm\",service=~\"$service\"} == 1)",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 19,
+      "type": "stat",
+      "title": "Scrape targets down",
+      "description": "Discovered vLLM endpoints whose last scrape failed. A Pod still loading weights is expected here for the length of one weight load — 69 s cold on the L40S; longer than that is a Pod that will never join. Zero is healthy. Lights on `kind`.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 39,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up{job=\"vllm\",service=~\"$service\"} == 0) or vector(0)",
+          "legendFormat": "down",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    }
+  ]
+}

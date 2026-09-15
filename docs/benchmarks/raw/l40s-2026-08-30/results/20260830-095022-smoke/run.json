@@ -1,0 +1,39 @@
+{
+  "accelerator": "NVIDIA L40S (run 1 coefficients)",
+  "argv": [
+    "bench/harness.py",
+    "--scenario",
+    "smoke",
+    "--startup-log",
+    "/workspace/run3/serve-cache-on.log"
+  ],
+  "endpoint": {
+    "host": "127.0.0.1",
+    "model": "Qwen/Qwen3-8B",
+    "port": 8000
+  },
+  "finished": "2026-08-30T09:50:28+0000",
+  "levels": [
+    "smoke-c2-h50"
+  ],
+  "pool_gate": "KV pool 176,227 tokens against reference 168,985 (1.043x, gate +-5%): PASS",
+  "scenario": "smoke",
+  "seat_verdict": "seats: >= 2 -- the sweep never breached TPOT p99 50 ms, so the crossing is above it",
+  "slo": {
+    "tpot_ms": 50.0,
+    "ttft_ms": 300.0
+  },
+  "started": "2026-08-30T09:50:22+0000",
+  "startup_log": {
+    "attention_backend": "FLASH_ATTN",
+    "enable_prefix_caching": "True",
+    "kv_cache_dtype": "auto",
+    "kv_cache_gib": 24.22,
+    "kv_cache_tokens": 176227.0,
+    "max_concurrency": 19.58
+  },
+  "startup_log_unread": [
+    "max_num_batched_tokens",
+    "max_num_seqs"
+  ]
+}

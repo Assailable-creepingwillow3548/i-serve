@@ -1,0 +1,22 @@
+# Pin the controller to the node whose ports reach the host.
+#
+# The controller publishes `hostPort: 80/443`, and only one node in
+# deploy/kind/cluster.yaml has those ports mapped out to localhost:8080/8443 —
+# the control-plane, labelled `ingress-ready=true` for exactly this. Upstream
+# dropped that nodeSelector from the kind manifest by controller-v1.15.1 (it
+# kept the hostPort and the control-plane tolerations), so the Pod is free to
+# land on a worker, where the hostPort binds a port nothing outside the cluster
+# can reach. Observed: Pod on `i-serve-worker2`, curl to localhost:8080
+# returning an empty reply — the docker-level port publish accepts the
+# connection whether or not anything inside the node is listening.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        ingress-ready: "true"

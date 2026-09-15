@@ -1,0 +1,22 @@
+# The base: what the stack looks like on a real GPU node. Applied directly it
+# needs an accelerator; overlays/kind makes it runnable without one.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Every resource below is placed in this namespace, so no manifest repeats it.
+namespace: llm
+
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - job-fetch-weights.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+# Stamped onto every object and into the Deployment's selector, which is why it
+# must never change afterwards: a Deployment's selector is immutable.
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/part-of: i-serve

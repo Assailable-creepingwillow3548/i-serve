@@ -1,0 +1,14 @@
+# Apply with:  kubectl apply -k deploy/keda/overlays/kind
+# KEDA itself is a prerequisite, not part of this kustomization:
+#   kubectl apply --server-side -f \
+#     https://github.com/kedacore/keda/releases/download/v2.20.2/keda-2.20.2.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: llm
+
+resources:
+  - ../../base
+
+patches:
+  - path: patch-fixture.yaml

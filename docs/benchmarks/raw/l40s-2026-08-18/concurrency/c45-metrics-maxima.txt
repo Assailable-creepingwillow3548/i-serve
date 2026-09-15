@@ -1,0 +1,51 @@
+root@3e2d195d7cfc:/vllm-workspace# wc -l /workspace/c45-metrics.txt
+grep num_requests_waiting /workspace/c45-metrics.txt | awk '{print $2}' | sort -n | tail -3
+grep num_requests_running /workspace/c45-metrics.txt | awk '{print $2}' | sort -n | tail -3
+grep kv_cache_usage_perc  /workspace/c45-metrics.txt | awk '{print $2}' | sort -n | tail -3
+grep num_preemptions      /workspace/c45-metrics.txt | awk '{print $2}' | sort -n | tail -1
+810 /workspace/c45-metrics.txt
+27.0
+33.0
+39.0
+41.0
+41.0
+41.0
+0.9944181646168401
+0.9982970671712393
+0.9990539262062441
+4.0
+
+
+
+
+root@3e2d195d7cfc:/vllm-workspace# tail -n 30 /workspace/sweep-c45.txt
+Traffic request rate: inf
+Burstiness factor: 1.0 (Poisson process)
+Maximum request concurrency: 45
+100%|██████████| 180/180 [01:55<00:00,  1.56it/s]
+tip: install termplotlib and gnuplot to plot the metrics
+============ Serving Benchmark Result ============
+Successful requests:                     180       
+Failed requests:                         0         
+Maximum request concurrency:             45        
+Benchmark duration (s):                  115.53    
+Total input tokens:                      720000    
+Total generated tokens:                  36000     
+Request throughput (req/s):              1.56      
+Output token throughput (tok/s):         311.61    
+Peak output token throughput (tok/s):    697.00    
+Peak concurrent requests:                48.00     
+Total token throughput (tok/s):          6543.84   
+---------------Time to First Token----------------
+Mean TTFT (ms):                          4985.30   
+Median TTFT (ms):                        3078.42   
+P99 TTFT (ms):                           23955.24  
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          114.30    
+Median TPOT (ms):                        122.99    
+P99 TPOT (ms):                           132.57    
+---------------Inter-token Latency----------------
+Mean ITL (ms):                           114.30    
+Median ITL (ms):                         59.66     
+P99 ITL (ms):                            238.75    
+==================================================

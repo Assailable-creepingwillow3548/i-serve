@@ -1,0 +1,6 @@
+# Everything the serving stack owns lives here, so `kubectl -n llm get all`
+# is the whole surface and nothing of ours lands in `default`.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: llm

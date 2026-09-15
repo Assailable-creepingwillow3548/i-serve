@@ -1,0 +1,20 @@
+# The stable name in front of a moving set of Pods. Replicas come and go under
+# autoscaling; `vllm.llm.svc.cluster.local:8000` does not.
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm
+  labels:
+    app.kubernetes.io/name: vllm
+spec:
+  type: ClusterIP
+  selector:
+    # Selects by label, not by name: this is the only thing tying the Service to
+    # the Deployment's Pods, and a typo here yields a Service with no endpoints
+    # rather than an error.
+    app.kubernetes.io/name: vllm
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP

@@ -1,0 +1,23 @@
+# Run the base on a cluster with no accelerator: deploy/kind/cluster.yaml.
+#
+# Apply with:  kubectl apply -k deploy/manifests/overlays/kind
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: llm
+
+resources:
+  - ../../base
+
+patches:
+  - path: patch-stub.yaml
+  - path: patch-no-fetch.yaml
+
+configMapGenerator:
+  # The stub's source becomes a ConfigMap, so no image has to be built or
+  # loaded into the cluster. The generated name carries a content hash, which is
+  # what makes editing server.py roll the Deployment instead of leaving stale
+  # code running in a Pod that never restarted.
+  - name: stub
+    files:
+      - server.py=stub/server.py

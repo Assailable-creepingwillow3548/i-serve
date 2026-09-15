@@ -1,0 +1,16 @@
+# The dashboard provider: read every *.json under the mounted directory and
+# treat the files as the source of truth. allowUiUpdates is off for the same
+# reason the datasource is not editable -- a change that lives only in
+# Grafana's SQLite is a change that the next Pod restart silently drops, and a
+# dashboard that cannot be diffed cannot be reviewed.
+apiVersion: 1
+
+providers:
+  - name: i-serve
+    type: file
+    disableDeletion: false
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false

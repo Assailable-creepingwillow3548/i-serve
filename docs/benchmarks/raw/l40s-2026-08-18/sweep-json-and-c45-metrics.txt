@@ -1,0 +1,189 @@
+root@3e2d195d7cfc:/vllm-workspace# for f in /workspace/sweep-*.json; do echo "########## $f"; cat "$f"; echo; done
+
+paste - - - - - < /workspace/c45-metrics.txt | sed 's/{[^}]*}//g; s/vllm://g'
+########## /workspace/sweep-c1.json
+{"date": "20260818-122028", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 20, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 1, "duration": 97.27638443908654, "completed": 20, "failed": 0, "total_input_tokens": 80000, "total_output_tokens": 4000, "request_throughput": 0.2055997466941608, "request_goodput": null, "output_throughput": 41.119949338832164, "total_token_throughput": 863.5189361154754, "max_output_tokens_per_s": 45.0, "max_concurrent_requests": 2, "rtfx": 0.0, "mean_ttft_ms": 350.136012758594, "median_ttft_ms": 350.1494500087574, "std_ttft_ms": 8.466914303358196, "p99_ttft_ms": 364.26770595717244, "mean_tpot_ms": 22.680032959742583, "median_tpot_ms": 22.678319221168252, "std_tpot_ms": 0.010395111525528005, "p99_tpot_ms": 22.708936884218886, "mean_itl_ms": 22.68003461535566, "median_itl_ms": 22.700132976751775, "std_itl_ms": 0.3987119995235886, "p99_itl_ms": 23.457698185229674}
+########## /workspace/sweep-c13.json
+{"date": "20260818-130011", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 52, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 13, "duration": 42.58116621791851, "completed": 52, "failed": 0, "total_input_tokens": 208000, "total_output_tokens": 10400, "request_throughput": 1.2211971775004595, "request_goodput": null, "output_throughput": 244.2394355000919, "total_token_throughput": 5129.02814550193, "max_output_tokens_per_s": 390.0, "max_concurrent_requests": 17, "rtfx": 0.0, "mean_ttft_ms": 1179.09887643719, "median_ttft_ms": 895.8767229923978, "std_ttft_ms": 925.9738991009154, "p99_ttft_ms": 4184.644924148452, "mean_tpot_ms": 47.15949299869552, "median_tpot_ms": 48.62432155773352, "std_tpot_ms": 4.089981714929866, "p99_tpot_ms": 50.874759782276506, "mean_itl_ms": 47.15949457016736, "median_itl_ms": 33.798288903199136, "std_itl_ms": 41.50507086457865, "p99_itl_ms": 190.46939993742853}
+########## /workspace/sweep-c14.json
+{"date": "20260818-130139", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 56, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 14, "duration": 44.61973846703768, "completed": 56, "failed": 0, "total_input_tokens": 224000, "total_output_tokens": 11200, "request_throughput": 1.2550499380754856, "request_goodput": null, "output_throughput": 251.00998761509712, "total_token_throughput": 5271.20973991704, "max_output_tokens_per_s": 406.0, "max_concurrent_requests": 17, "rtfx": 0.0, "mean_ttft_ms": 1195.0208109462567, "median_ttft_ms": 728.1322475173511, "std_ttft_ms": 1034.819894859899, "p99_ttft_ms": 4554.646720335587, "mean_tpot_ms": 49.60125603180576, "median_tpot_ms": 51.36181980672166, "std_tpot_ms": 4.660375551979259, "p99_tpot_ms": 53.49323368770534, "mean_itl_ms": 49.601257786079366, "median_itl_ms": 34.600860031787306, "std_itl_ms": 44.14364868040795, "p99_itl_ms": 194.91027245763686}
+########## /workspace/sweep-c16.json
+{"date": "20260818-123106", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 64, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 16, "duration": 48.34528494300321, "completed": 64, "failed": 0, "total_input_tokens": 256000, "total_output_tokens": 12800, "request_throughput": 1.3238105861916618, "request_goodput": null, "output_throughput": 264.7621172383324, "total_token_throughput": 5560.00446200498, "max_output_tokens_per_s": 448.0, "max_concurrent_requests": 19, "rtfx": 0.0, "mean_ttft_ms": 1328.6982271838497, "median_ttft_ms": 916.4518705219962, "std_ttft_ms": 1186.3017574908636, "p99_ttft_ms": 5209.866736794355, "mean_tpot_ms": 53.53115971076623, "median_tpot_ms": 55.63711288213102, "std_tpot_ms": 5.332470629827317, "p99_tpot_ms": 58.010175573258145, "mean_itl_ms": 53.53116113696361, "median_itl_ms": 36.30061796866357, "std_itl_ms": 46.81074354980961, "p99_itl_ms": 193.3062836935278}
+########## /workspace/sweep-c23.json
+{"date": "20260818-123310", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 92, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 23, "duration": 62.673644887050614, "completed": 92, "failed": 0, "total_input_tokens": 368000, "total_output_tokens": 18400, "request_throughput": 1.4679216465836773, "request_goodput": null, "output_throughput": 293.5843293167354, "total_token_throughput": 6165.270915651445, "max_output_tokens_per_s": 552.0, "max_concurrent_requests": 27, "rtfx": 0.0, "mean_ttft_ms": 1592.5488986148318, "median_ttft_ms": 766.8764510308392, "std_ttft_ms": 1865.7021006686307, "p99_ttft_ms": 7734.17549883714, "mean_tpot_ms": 69.90529800405848, "median_tpot_ms": 73.87099769633338, "std_tpot_ms": 8.402258018536527, "p99_tpot_ms": 75.7564908450577, "mean_itl_ms": 69.90529951160764, "median_itl_ms": 43.06510096648708, "std_itl_ms": 57.2441656230175, "p99_itl_ms": 206.93514566402882}
+########## /workspace/sweep-c24.json
+{"date": "20260818-123455", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 96, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 24, "duration": 64.76007449894678, "completed": 96, "failed": 0, "total_input_tokens": 384000, "total_output_tokens": 19200, "request_throughput": 1.4823948357496297, "request_goodput": null, "output_throughput": 296.47896714992595, "total_token_throughput": 6226.058310148445, "max_output_tokens_per_s": 553.0, "max_concurrent_requests": 28, "rtfx": 0.0, "mean_ttft_ms": 1696.7703939772036, "median_ttft_ms": 776.9883330329321, "std_ttft_ms": 1953.5654657104947, "p99_ttft_ms": 8152.271646901499, "mean_tpot_ms": 71.95582764563348, "median_tpot_ms": 76.06817011302572, "std_tpot_ms": 8.940013267775464, "p99_tpot_ms": 78.23350454090355, "mean_itl_ms": 71.95582895838321, "median_itl_ms": 43.9562980318442, "std_itl_ms": 58.38591330515122, "p99_itl_ms": 205.52879095310348}
+########## /workspace/sweep-c32.json
+{"date": "20260818-123658", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 128, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 32, "duration": 81.28555944899563, "completed": 128, "failed": 0, "total_input_tokens": 512000, "total_output_tokens": 25600, "request_throughput": 1.574695442433614, "request_goodput": null, "output_throughput": 314.93908848672277, "total_token_throughput": 6613.720858221179, "max_output_tokens_per_s": 640.0, "max_concurrent_requests": 35, "rtfx": 0.0, "mean_ttft_ms": 2070.0655453647414, "median_ttft_ms": 826.0087160160765, "std_ttft_ms": 2746.024504839517, "p99_ttft_ms": 11064.073741433678, "mean_tpot_ms": 90.44288535106767, "median_tpot_ms": 96.74075308774164, "std_tpot_ms": 12.738994229418193, "p99_tpot_ms": 98.72904807329178, "mean_itl_ms": 90.44288691312254, "median_itl_ms": 50.68951047724113, "std_itl_ms": 68.19675970750981, "p99_itl_ms": 225.72251389501616}
+########## /workspace/sweep-c45.json
+{"date": "20260818-124410", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 180, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 45, "duration": 115.52844303008169, "completed": 180, "failed": 0, "total_input_tokens": 720000, "total_output_tokens": 36000, "request_throughput": 1.558057871109117, "request_goodput": null, "output_throughput": 311.61157422182345, "total_token_throughput": 6543.843058658292, "max_output_tokens_per_s": 697.0, "max_concurrent_requests": 48, "rtfx": 0.0, "mean_ttft_ms": 4985.296174769368, "median_ttft_ms": 3078.4194045118056, "std_ttft_ms": 4291.745069780088, "p99_ttft_ms": 23955.244115309328, "mean_tpot_ms": 114.29695167707068, "median_tpot_ms": 122.9878038415994, "std_tpot_ms": 20.780976460827958, "p99_tpot_ms": 132.56605936757802, "mean_itl_ms": 114.29695304438195, "median_itl_ms": 59.65597496833652, "std_itl_ms": 83.78814458837307, "p99_itl_ms": 238.75008435104974}
+########## /workspace/sweep-c8.json
+{"date": "20260818-122752", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 32, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 8, "duration": 33.217021103948355, "completed": 32, "failed": 0, "total_input_tokens": 128000, "total_output_tokens": 6400, "request_throughput": 0.9633615217890898, "request_goodput": null, "output_throughput": 192.67230435781798, "total_token_throughput": 4046.1183915141773, "max_output_tokens_per_s": 272.0, "max_concurrent_requests": 12, "rtfx": 0.0, "mean_ttft_ms": 890.3715360829665, "median_ttft_ms": 682.9211430158466, "std_ttft_ms": 528.7316291437668, "p99_ttft_ms": 2548.739246926271, "mean_tpot_ms": 37.03017596581506, "median_tpot_ms": 37.80383068071351, "std_tpot_ms": 2.278808657638488, "p99_tpot_ms": 39.47517830304609, "mean_itl_ms": 37.03017759879223, "median_itl_ms": 29.649760981556028, "std_itl_ms": 31.381244951092125, "p99_itl_ms": 181.0079479101114}
+########## /workspace/sweep-len2000.json
+{"date": "20260818-125122", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 20, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 4, "duration": 27.59639794495888, "completed": 20, "failed": 0, "total_input_tokens": 40000, "total_output_tokens": 4000, "request_throughput": 0.7247322654170328, "request_goodput": null, "output_throughput": 144.94645308340657, "total_token_throughput": 1594.4109839174723, "max_output_tokens_per_s": 164.0, "max_concurrent_requests": 8, "rtfx": 0.0, "mean_ttft_ms": 379.7720037109684, "median_ttft_ms": 391.718806931749, "std_ttft_ms": 129.70364188461267, "p99_ttft_ms": 624.4418471562676, "mean_tpot_ms": 25.789481900683857, "median_tpot_ms": 25.708177477067533, "std_tpot_ms": 0.616666502201602, "p99_tpot_ms": 26.69623469693432, "mean_itl_ms": 25.789483745193962, "median_itl_ms": 24.73115746397525, "std_itl_ms": 11.565362234698776, "p99_itl_ms": 30.890663355821747}
+########## /workspace/sweep-len4000.json
+{"date": "20260818-125347", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 20, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 4, "duration": 32.38823857402895, "completed": 20, "failed": 0, "total_input_tokens": 80000, "total_output_tokens": 4000, "request_throughput": 0.6175081103681055, "request_goodput": null, "output_throughput": 123.5016220736211, "total_token_throughput": 2593.5340635460434, "max_output_tokens_per_s": 156.0, "max_concurrent_requests": 8, "rtfx": 0.0, "mean_ttft_ms": 700.8286063442938, "median_ttft_ms": 674.8048434965312, "std_ttft_ms": 232.81698865879642, "p99_ttft_ms": 1277.7310264040711, "mean_tpot_ms": 28.954928749955805, "median_tpot_ms": 29.028083329397866, "std_tpot_ms": 1.063010386177435, "p99_tpot_ms": 30.52787265427944, "mean_itl_ms": 28.954930717316245, "median_itl_ms": 26.32447355426848, "std_itl_ms": 18.80730458516993, "p99_itl_ms": 160.7701522135176}
+########## /workspace/sweep-len8000.json
+{"date": "20260818-125516", "endpoint_type": "openai", "backend": "openai", "label": null, "model_id": "Qwen/Qwen3-8B", "tokenizer_id": "Qwen/Qwen3-8B", "num_prompts": 20, "request_rate": "inf", "burstiness": 1.0, "max_concurrency": 4, "duration": 42.749958976055495, "completed": 20, "failed": 0, "total_input_tokens": 160000, "total_output_tokens": 4000, "request_throughput": 0.4678367062574754, "request_goodput": null, "output_throughput": 93.56734125149508, "total_token_throughput": 3836.2609913112983, "max_output_tokens_per_s": 136.0, "max_concurrent_requests": 6, "rtfx": 0.0, "mean_ttft_ms": 1335.2904053870589, "median_ttft_ms": 1313.1662944797426, "std_ttft_ms": 477.179387066757, "p99_ttft_ms": 2740.892832474782, "mean_tpot_ms": 36.0996078446814, "median_tpot_ms": 36.10368417581805, "std_tpot_ms": 2.160849785073011, "p99_tpot_ms": 38.67986823669658, "mean_itl_ms": 36.099609596176236, "median_itl_ms": 29.52285303035751, "std_itl_ms": 31.13584755426991, "p99_itl_ms": 197.08708630525507}
+12:41:25        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:27        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:29        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:31        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:33        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:35        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:37        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:39        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:41        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:43        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:45        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:47        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:49        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:51        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:53        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:55        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:57        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:41:59        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:42:01        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:42:03        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:42:05        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:42:07        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:42:09        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:42:11        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:42:14        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 0.0
+12:42:16        num_requests_running 6.0        num_requests_waiting 39.0       kv_cache_usage_perc 0.12138126773888358    num_preemptions_total 0.0
+12:42:18        num_requests_running 12.0       num_requests_waiting 33.0       kv_cache_usage_perc 0.26698202459791864    num_preemptions_total 0.0
+12:42:20        num_requests_running 18.0       num_requests_waiting 27.0       kv_cache_usage_perc 0.4123935666982025     num_preemptions_total 0.0
+12:42:22        num_requests_running 23.0       num_requests_waiting 22.0       kv_cache_usage_perc 0.546073793755913      num_preemptions_total 0.0
+12:42:24        num_requests_running 28.0       num_requests_waiting 17.0       kv_cache_usage_perc 0.6674550614947966     num_preemptions_total 0.0
+12:42:26        num_requests_running 34.0       num_requests_waiting 11.0       kv_cache_usage_perc 0.7886471144749291     num_preemptions_total 0.0
+12:42:28        num_requests_running 39.0       num_requests_waiting 6.0        kv_cache_usage_perc 0.9100283822138127     num_preemptions_total 0.0
+12:42:30        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9836329233680227     num_preemptions_total 0.0
+12:42:32        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9919583727530747     num_preemptions_total 0.0
+12:42:34        num_requests_running 40.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9760643330179753     num_preemptions_total 1.0
+12:42:36        num_requests_running 40.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9840113528855251     num_preemptions_total 1.0
+12:42:38        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9716177861873226     num_preemptions_total 1.0
+12:42:40        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9680227057710501     num_preemptions_total 1.0
+12:42:42        num_requests_running 39.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9522232734153264     num_preemptions_total 1.0
+12:42:44        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9619678334910123     num_preemptions_total 1.0
+12:42:46        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9467360454115421     num_preemptions_total 1.0
+12:42:48        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.956480605487228      num_preemptions_total 1.0
+12:42:50        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9412488174077578     num_preemptions_total 1.0
+12:42:52        num_requests_running 39.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9263008514664144     num_preemptions_total 1.0
+12:42:54        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9729422894985809     num_preemptions_total 1.0
+12:42:56        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9883632923368023     num_preemptions_total 1.0
+12:42:58        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9944181646168401     num_preemptions_total 1.0
+12:43:00        num_requests_running 40.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.978713339640492      num_preemptions_total 2.0
+12:43:02        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9733207190160833     num_preemptions_total 2.0
+12:43:04        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9583727530747398     num_preemptions_total 2.0
+12:43:06        num_requests_running 39.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9430463576158941     num_preemptions_total 2.0
+12:43:08        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9528855250709556     num_preemptions_total 2.0
+12:43:10        num_requests_running 39.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9376537369914854     num_preemptions_total 2.0
+12:43:12        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9473036896877957     num_preemptions_total 2.0
+12:43:14        num_requests_running 39.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9323557237464523     num_preemptions_total 2.0
+12:43:16        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9418164616840113     num_preemptions_total 2.0
+12:43:18        num_requests_running 39.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9268684957426679     num_preemptions_total 2.0
+12:43:20        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9818353831598865     num_preemptions_total 2.0
+12:43:22        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9900662251655629     num_preemptions_total 2.0
+12:43:24        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9982970671712393     num_preemptions_total 2.0
+12:43:26        num_requests_running 40.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9800378429517502     num_preemptions_total 3.0
+12:43:28        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9726584673604541     num_preemptions_total 3.0
+12:43:30        num_requests_running 39.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9565752128666036     num_preemptions_total 3.0
+12:43:33        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9662251655629139     num_preemptions_total 3.0
+12:43:35        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9503311258278145     num_preemptions_total 3.0
+12:43:37        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9603595080416273     num_preemptions_total 3.0
+12:43:39        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9448438978240303     num_preemptions_total 3.0
+12:43:41        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.954872280037843      num_preemptions_total 3.0
+12:43:43        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.939356669820246      num_preemptions_total 3.0
+12:43:45        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9493850520340587     num_preemptions_total 3.0
+12:43:47        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9829706717123936     num_preemptions_total 3.0
+12:43:49        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.990728476821192      num_preemptions_total 3.0
+12:43:51        num_requests_running 41.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9990539262062441     num_preemptions_total 3.0
+12:43:53        num_requests_running 40.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9829706717123936     num_preemptions_total 4.0
+12:43:55        num_requests_running 39.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.9592242194891202     num_preemptions_total 4.0
+12:43:57        num_requests_running 40.0       num_requests_waiting 4.0        kv_cache_usage_perc 0.9687795648060549     num_preemptions_total 4.0
+12:43:59        num_requests_running 39.0       num_requests_waiting 5.0        kv_cache_usage_perc 0.95279091769158       num_preemptions_total 4.0
+12:44:01        num_requests_running 40.0       num_requests_waiting 1.0        kv_cache_usage_perc 0.9626300851466414     num_preemptions_total 4.0
+12:44:03        num_requests_running 27.0       num_requests_waiting 0.0        kv_cache_usage_perc 0.6545884578997162     num_preemptions_total 4.0
+12:44:05        num_requests_running 18.0       num_requests_waiting 0.0        kv_cache_usage_perc 0.43661305581835386    num_preemptions_total 4.0
+12:44:07        num_requests_running 17.0       num_requests_waiting 0.0        kv_cache_usage_perc 0.41721854304635764    num_preemptions_total 4.0
+12:44:09        num_requests_running 10.0       num_requests_waiting 0.0        kv_cache_usage_perc 0.2482497634815516     num_preemptions_total 4.0
+12:44:11        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:13        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:15        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:17        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:19        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:21        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:23        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:25        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:27        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:29        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:31        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:33        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:35        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:37        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:39        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:41        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:43        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:45        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:47        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:49        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:51        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:53        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:56        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:44:58        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:00        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:02        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:04        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:06        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:08        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:10        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:12        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:14        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:16        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:18        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:20        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:22        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:24        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:26        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:28        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:30        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:32        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:34        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:36        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:38        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:40        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:42        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:44        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:46        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:48        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:50        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:52        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:54        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:56        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:45:58        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:00        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:02        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:04        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:06        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:08        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:10        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:12        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:14        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:16        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:18        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:21        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:23        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:25        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:27        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:29        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:31        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:33        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:35        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:37        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:39        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:41        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:43        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:45        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:47        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:49        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0
+12:46:51        num_requests_running 0.0        num_requests_waiting 0.0        kv_cache_usage_perc 0.0    num_preemptions_total 4.0

@@ -1,0 +1,34 @@
+# One copy of the weights, on the node that serves them.
+#
+# `emptyDir` made every replica download 16.4 GB of its own — correct at one
+# replica and wrong at two. Three fixes were available and the obvious one is
+# not the choice:
+#
+#   RWX network volume  one copy, but every replica reads 16.4 GB over the
+#                       network at the exact moment they all cold-start. The
+#                       shared volume becomes the startup bottleneck it was
+#                       meant to remove.
+#   baked image         weights in a layer: pulled once per node, cached by the
+#                       container runtime, immutable with the tag. The right
+#                       answer for a multi-node fleet, at the price of a ~17 GB
+#                       image to build and push on every model change.
+#   RWO volume (this)   one copy on local disk, no network read at start, and
+#                       correct exactly while the replicas share a node.
+#
+# ReadWriteOnce is a per-*node* guarantee, not a per-pod one — that is
+# ReadWriteOncePod — so any number of replicas on the same node mount it at
+# once. On a single-accelerator-node pool the GPU request already pins them
+# there, which is what makes this safe rather than lucky. The moment replicas
+# span nodes it breaks, and the fix is the baked image, not RWX.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: weights
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      # 16.4 GB of weights, with room to hold a second revision side by side
+      # during a model swap rather than deleting the running one first.
+      storage: 40Gi

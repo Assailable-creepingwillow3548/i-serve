@@ -1,0 +1,34 @@
+# The one label that separates the tracks, set in the three places it has to
+# agree: the Deployment's selector, its Pod template, and the Service's
+# selector.
+#
+# The stable Service selects `app.kubernetes.io/name: vllm`. If the canary Pods
+# carried that label too, the stable Service would route to them as well and
+# the weight in the canary Ingress would be a fiction — some canary traffic
+# would arrive through the stable path, uncounted. So the canary Pods carry a
+# different value, and only the canary Service and the canary Ingress reach
+# them.
+#
+# A Deployment's selector is immutable, which is why this is safe to set here
+# and would be impossible to set on the stable Deployment afterwards: this is
+# a new object.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm-canary
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vllm-canary
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm
+spec:
+  selector:
+    app.kubernetes.io/name: vllm-canary

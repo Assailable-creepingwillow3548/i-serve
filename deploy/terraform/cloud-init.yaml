@@ -1,0 +1,14 @@
+#cloud-config
+# First boot of the GPU droplet. Runs once, as root, after SSH is already up,
+# so the operator can log in while it works. `cloud-init status --wait` on the
+# droplet blocks until it has finished and is the gate before the first
+# `docker run`; its log is /workspace/first-boot.log.
+
+runcmd:
+  # The run's working tree: weights under hf/, results under run1/. Everything
+  # a run produces lives here and is copied off before the droplet is destroyed.
+  - mkdir -p /workspace/hf /workspace/run1
+  # The ~11 GB pull moved from billed hands-on time to the boot: the operator's
+  # first minutes go to `rocm-smi`, not to a progress bar.
+  - docker pull ${vllm_image} > /workspace/first-boot.log 2>&1
+  - docker image inspect ${vllm_image} --format 'pulled {{.Id}}' >> /workspace/first-boot.log 2>&1

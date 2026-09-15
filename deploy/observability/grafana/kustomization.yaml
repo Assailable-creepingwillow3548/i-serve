@@ -1,0 +1,27 @@
+# Apply with:  kubectl apply -k deploy/observability/grafana
+# after ../prometheus, which owns the `monitoring` namespace and the server
+# the datasource below points at. The full order is the repository README.md.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+resources:
+  - deployment.yaml
+  - service.yaml
+
+configMapGenerator:
+  # Generated names carry a content hash, so editing a dashboard rolls the
+  # Pod and Grafana re-reads the file -- the same reason ../prometheus and the
+  # stub use the generator. Without it a changed JSON sits in a ConfigMap that
+  # a running Grafana has already provisioned from and will not re-read until
+  # its updateIntervalSeconds, and the roll is the more legible of the two.
+  - name: grafana-datasources
+    files:
+      - datasources.yaml
+  - name: grafana-dashboard-provider
+    files:
+      - dashboards.yaml
+  - name: grafana-dashboards
+    files:
+      - dashboards/vllm-slo.json

@@ -1,0 +1,153 @@
+# What this enforces, and why each step is here rather than in a README sentence.
+#
+# The repository's front page makes four claims that are cheap to state and
+# easy to leave behind: that `bench/` is standard library only, that it runs on
+# Python 3.10 and newer, that the picture beside the first paragraph is what
+# the data in `bench/plot_predicted_vs_measured.py` produces, and that the
+# calculator on the Pages site computes what `bench/roofline.py` computes. All
+# of them used to be checked by hand, which means they were checked until
+# someone forgot.
+#
+# Nothing is installed. That is not a shortcut -- it is the claim under test: if
+# a `pip install` ever becomes necessary to run `bench/`, this workflow is what
+# fails, on the line that needed it. The one step that is not Python runs
+# `node`, which the runner already carries, over `site/selftest.js`: the site's
+# JavaScript is a second implementation of the model, and a golden grid Python
+# writes is the only thing that makes the duplication honest.
+name: bench
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor and the ceiling the README names. 3.10 was a reading of the
+        # grammar and the modules used until this matrix existed; it is a run now.
+        python: ["3.10", "3.14"]
+    name: tests · python ${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      # Executed directly rather than through pytest, because that is how they
+      # are run on a rented pod, where pytest is not installed and a GPU hour is
+      # being paid for. The path this workflow exercises is the expensive one.
+      - name: bench/tests
+        run: |
+          for test in bench/tests/test_*.py; do
+            echo "--- $test"
+            python3 "$test"
+          done
+
+      # The front page's five-minute route, run as written. A reader with
+      # nothing installed types this first; if it has stopped working, the
+      # failure belongs here and not in their terminal.
+      - name: the quick-start command from README.md
+        run: |
+          python3 bench/harness.py --dry-run --scenario seats-cached --accelerator l40s-run1
+          python3 bench/harness.py --dry-run --scenario seats-cached --accelerator mi300x
+
+      # The reader's own operating point, and the two machine-readable forms
+      # the site is built from. Piped through json.tool so a stray Infinity
+      # fails here rather than in a browser.
+      - name: the --what-if and --json forms
+        run: |
+          python3 bench/predictions.py --what-if --hit-rate 0.8
+          python3 bench/predictions.py --what-if --hit-rate 0.8 --json | python3 -m json.tool > /dev/null
+          python3 bench/harness.py --dry-run --scenario seats-cached --slo-tpot-ms 200 --json | python3 -m json.tool > /dev/null
+
+  chart:
+    runs-on: ubuntu-latest
+    name: the committed chart is what the data produces
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      # `bench/tests/test_plot_predicted_vs_measured.py` asserts the same thing
+      # against the string the generator returns. This step asserts it against
+      # the bytes on disk, and prints the diff when they disagree -- which is
+      # the form a human can act on: it says what the picture would have
+      # changed to, not merely that it would have.
+      - name: regenerate and diff
+        run: |
+          python3 bench/plot_predicted_vs_measured.py
+          if ! git diff --exit-code --stat docs/benchmarks/predicted-vs-measured.svg; then
+            echo
+            echo "The committed SVG is stale. Regenerate it and commit the result:"
+            echo "    python3 bench/plot_predicted_vs_measured.py"
+            echo
+            git --no-pager diff docs/benchmarks/predicted-vs-measured.svg | head -60
+            exit 1
+          fi
+
+  site-data:
+    runs-on: ubuntu-latest
+    name: the committed site data is what bench/ produces, and the JS agrees with it
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      # Same shape as the chart job: `bench/tests/test_export_site_data.py`
+      # asserts this against the strings the export returns; this asserts it
+      # against the bytes on disk and prints the rows that moved.
+      - name: regenerate and diff
+        run: |
+          python3 bench/export_site_data.py
+          if ! git diff --exit-code --stat site/data/; then
+            echo
+            echo "site/data is stale. Regenerate it and commit the result:"
+            echo "    python3 bench/export_site_data.py"
+            echo
+            git --no-pager diff site/data/ | head -80
+            exit 1
+          fi
+
+      # The port against the golden grid. node is preinstalled on the runner;
+      # nothing is installed for this step either.
+      - name: the JavaScript port agrees with Python on every golden row
+        run: node site/selftest.js
+
+  guards:
+    runs-on: ubuntu-latest
+    name: the two refusals, on a branch no hook ever saw
+    steps:
+      - uses: actions/checkout@v4
+
+      # `.githooks/pre-commit` runs these over the index before a commit exists,
+      # but hooks are not carried by `git clone`: a contributor's branch is
+      # checked here and nowhere else. Same two rules, over the checkout.
+      - name: the symptom map carries no status glyph
+        run: |
+          if git grep -nE "✅|⚠️|⏳" -- docs/symptom-map.md docs/symptom-map.json; then
+            echo
+            echo "The map is a decision tree, not a progress board: a node carries"
+            echo "its evidence and its home, and a glyph on it claims a state the"
+            echo "map does not make."
+            exit 1
+          fi
+
+      - name: repository content is English
+        run: |
+          # git grep, not grep: the same tool the hook uses, and the one whose
+          # -P is always in UTF mode, so \x{0400} means what it says.
+          if git grep -lIP "[\x{0400}-\x{04FF}]" -- \
+               bench controllers deploy docs site .github .githooks \
+               README.md CONTRIBUTING.md LICENSE CLAUDE.md up.sh down.sh; then
+            echo
+            echo "CONTRIBUTING.md, 'What a reviewer enforces': repository content"
+            echo "is English. -I skips binary files, whose bytes decode into stray"
+            echo "Cyrillic -- the dashboard screenshots are why that flag is there."
+            exit 1
+          fi

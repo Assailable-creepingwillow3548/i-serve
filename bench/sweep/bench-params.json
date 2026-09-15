@@ -1,0 +1,5 @@
+{
+  "c08": {"max_concurrency": 8,  "num_prompts": 48},
+  "c16": {"max_concurrency": 16, "num_prompts": 96},
+  "c24": {"max_concurrency": 24, "num_prompts": 144}
+}

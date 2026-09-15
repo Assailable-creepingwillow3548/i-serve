@@ -1,0 +1,55 @@
+# Scrape config for one job, and the one decision in it is the target list.
+#
+# A single static target `vllm.llm.svc:8000` would be wrong, and wrong in a way
+# that looks like it works: the Service is a virtual IP that load-balances, so
+# each scrape lands on one arbitrary replica. The autoscaler would then read one
+# pod's queue and call it the fleet's — and act on it, which oscillates.
+# Discovery gives one target per endpoint address instead, and the sum is taken
+# in the query.
+global:
+  # 5 s here is a debugging convenience on kind. It is also not the binding
+  # constraint on how fast scaling reacts: KEDA polls every 30 s by default, and
+  # a real vLLM pod needs minutes to load weights.
+  scrape_interval: 5s
+  # How often rules.yml is evaluated, and therefore the granularity of every
+  # `for:` clause in it: a 2 m window is checked eight times, not continuously.
+  evaluation_interval: 15s
+
+# Alerting rules live beside the scrape config in the same ConfigMap, so a
+# change to either rolls the Pod. Prometheus evaluates them and exposes the
+# result as the ALERTS series and at /alerts; there is no Alertmanager on
+# kind, so "fires" means the state there reads FIRING, not that anyone is paged.
+rule_files:
+  - /etc/prometheus/rules.yml
+
+scrape_configs:
+  - job_name: vllm
+    kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names: [llm]
+    relabel_configs:
+      # Keep only the vLLM Services' named http port. Without this the job
+      # scrapes every endpoint in the namespace, including the kubelet's view
+      # of pods that serve no metrics at all. The optional suffix admits the
+      # canary track (deploy/manifests/overlays/kind-canary): a canary that is
+      # not scraped is a rollout with no metric to decide it, which is not a
+      # canary at all.
+      - source_labels:
+          - __meta_kubernetes_service_name
+          - __meta_kubernetes_endpoint_port_name
+        action: keep
+        regex: vllm(-canary)?;http
+      # The Service name survives as `service`, so the two tracks can be told
+      # apart in a query — `vllm` is the stable track, `vllm-canary` the
+      # canary — without parsing pod names.
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: service
+      # The pod name survives into the series, so `waiting` can be read per
+      # replica when the aggregate looks wrong. Discovery also keeps *not
+      # ready* addresses, which matters: a pod still loading weights holds no
+      # queue, and a pod that just went unready still does.
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_endpoint_ready]
+        target_label: endpoint_ready

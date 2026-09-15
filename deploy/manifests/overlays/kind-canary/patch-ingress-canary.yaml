@@ -1,0 +1,24 @@
+# The split. ingress-nginx treats an Ingress with `canary: "true"` as an
+# alternative backend for the rule of a non-canary Ingress with the same host
+# and path — here the stable `vllm` Ingress, no host, `/v1` — and sends
+# `canary-weight` per cent of that rule's requests to it. At most one canary
+# Ingress per rule; every other annotation on this object is ignored and
+# inherited from the stable one, so the timeouts and the buffering decision in
+# base/ingress.yaml hold on both tracks without being repeated.
+#
+# The weight is the runbook's knob: it starts at 10, and the two ways this
+# object leaves are `kubectl delete -k` (roll back — the rule reverts to the
+# stable backend at the next config reload) or the promotion sequence in
+# docs/runbook.md.
+#
+# Per request, not per connection or per client: a streaming request stays on
+# the track it was routed to for its whole life, and the next request from the
+# same client is drawn again. What that means for the metric that decides the
+# rollout is in the runbook.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vllm
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "10"

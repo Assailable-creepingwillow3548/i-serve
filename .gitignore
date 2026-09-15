@@ -1,0 +1,23 @@
+.DS_Store
+*.log
+# ...except raw benchmark evidence. A run's server logs ARE the primary record --
+# docs/SLO.md section 9 puts the startup log above every derivation in this repo --
+# and `*.log` silently dropped nine of them on 2026-08-26, the day the volume
+# holding the only other copy was deleted. Caught by a file count, not by eye.
+!docs/benchmarks/raw/**/*.log
+__pycache__/
+.venv/
+bin/
+results/
+# ...except a harvested run's results, for the same reason as the *.log rule
+# above and caught the same way, by a file count: run 3's harness writes one JSON
+# per level into results/, and that directory IS the measurement -- 144 files of
+# it (docs/benchmarks/raw/l40s-2026-08-30/README.md).
+!docs/benchmarks/raw/**/results/
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# pytest's own cache, which today is hidden only by the `*` in the directory it
+# writes for itself -- a coincidence, not a rule.
+.pytest_cache/

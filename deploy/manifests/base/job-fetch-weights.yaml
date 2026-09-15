@@ -1,0 +1,43 @@
+# Populate the volume once, before any server starts. Downloading from inside
+# the serving container is what made the startup probe need ten minutes of
+# patience; a Job moves that cost out of the request path and makes it visible
+# as its own object when it fails.
+#
+# The Job is immutable once created: re-applying an unchanged one is a no-op,
+# and changing it means deleting it first. That is a property of Jobs, not a
+# mistake here — the alternative, an initContainer, re-runs the check in every
+# pod on every restart.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fetch-weights
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: fetch
+          # The serving image, so the download uses exactly the huggingface_hub
+          # the engine will later read the cache with.
+          image: vllm/vllm-openai:v0.27.1
+          command:
+            - python
+            - -c
+            # snapshot_download rather than the `hf` CLI: the CLI was renamed
+            # from `huggingface-cli`, and a script that outlives one release of
+            # the image should not depend on which name it has.
+            - |
+              from huggingface_hub import snapshot_download
+              path = snapshot_download("Qwen/Qwen3-8B")
+              print("weights at", path, flush=True)
+          env:
+            - name: HF_HOME
+              value: /cache/hf
+          volumeMounts:
+            - name: weights
+              mountPath: /cache/hf
+      volumes:
+        - name: weights
+          persistentVolumeClaim:
+            claimName: weights

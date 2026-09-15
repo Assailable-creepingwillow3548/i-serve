@@ -1,0 +1,17 @@
+# ingress-nginx for deploy/kind/cluster.yaml.
+#
+# The upstream kind manifest is taken as a pinned remote resource rather than
+# vendored: the controller is a prerequisite, like KEDA, and copying 700 lines
+# into this repository would only create a second thing to keep current. The tag
+# is a release tag and never `main` — `main` changes the proxy under numbers
+# already measured through it.
+#
+# Apply with:  kubectl apply -k deploy/ingress/overlays/kind
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.15.1/deploy/static/provider/kind/deploy.yaml
+
+patches:
+  - path: patch-node.yaml

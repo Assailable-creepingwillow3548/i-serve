@@ -1,0 +1,23 @@
+# Two objects the canary must not create a second copy of.
+#
+# The Namespace: both tracks live in `llm`, and a Namespace named `llm-canary`
+# would be created empty and never used.
+#
+# The PVC: a canary reads the *same* weights the stable track reads. On kind
+# the volume is empty either way; on a GPU pool the point is that a model
+# version is a different image or flag set on the same weights — and that a
+# second RWO claim would be a second 16.4 GB download that then has to be
+# kept identical by hand. With the claim absent from this build the
+# Deployment's `claimName: weights` is left as it is, pointing at the shared
+# one.
+$patch: delete
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: llm
+---
+$patch: delete
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: weights

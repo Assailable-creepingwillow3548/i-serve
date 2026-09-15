@@ -1,0 +1,13 @@
+startup log: {'kv_cache_tokens': 176227.0, 'kv_cache_gib': 24.22, 'max_concurrency': 19.58, 'enable_prefix_caching': 'True', 'kv_cache_dtype': 'auto', 'attention_backend': 'FLASH_ATTN'}
+  -> NOT FOUND in the log: max_num_batched_tokens, max_num_seqs
+  -> a gate that reads a missing fact does not fire and does not complain; fix the pattern in bench/vllm_metrics.py before spending a level on it
+KV pool 176,227 tokens against reference 168,985 (1.043x, gate +-5%): PASS
+
+level                  load     ok/f      h  TTFT p50  TTFT p99  TPOT p50  TPOT p99   medITL   interf  good/s    tok/s
+rate-9-h80                9  810/0    0.800     181.3     325.2     59.26     64.44    40.07    19.20    2.59   1663.0
+rate-11-h80              11  990/0    0.800     456.8    7590.3    118.28    138.45    91.52    26.75    0.30   1814.8
+rate-13-h80              13 1170/0    0.800   11401.9   30611.7    136.82    140.86   151.06   -14.23    0.00   1829.0
+
+seats: not measured -- this scenario has no closed-loop level
+
+artefacts: results/run3-b-h80-ext/

@@ -1,0 +1,57 @@
+# Deploy `site/` to GitHub Pages -- and refuse to, if the page would lie.
+#
+# The page is static files, so the deploy is a copy. What earns this workflow
+# its two guard steps is that the copy carries a second implementation of the
+# performance model: before anything is uploaded, `site/data/` is regenerated
+# from `bench/` and diffed against what is committed, and `site/selftest.js`
+# runs the JavaScript over every golden row. A page whose numbers are stale, or
+# whose arithmetic disagrees with Python, is not deployed.
+#
+# Two one-time settings on the repository, not in this file: Settings -> Pages
+# -> Source -> "GitHub Actions", and a repository variable PAGES_ENABLED=true.
+# The job is gated on the variable so that the private working repository --
+# where Pages cannot be enabled -- does not show a red run on every push; there
+# the job is skipped, and bench.yml carries the same two guards anyway.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: vars.PAGES_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: the data the page loads is what bench/ produces
+        run: |
+          python3 bench/export_site_data.py
+          git diff --exit-code --stat site/data/
+
+      - name: the JavaScript port agrees with Python on every golden row
+        run: node site/selftest.js
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

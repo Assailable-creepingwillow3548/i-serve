@@ -1,0 +1,32 @@
+startup log: {'kv_cache_tokens': 176227.0, 'kv_cache_gib': 24.22, 'max_concurrency': 19.58, 'enable_prefix_caching': 'True', 'kv_cache_dtype': 'auto', 'attention_backend': 'FLASH_ATTN'}
+  -> NOT FOUND in the log: max_num_batched_tokens, max_num_seqs
+  -> a gate that reads a missing fact does not fire and does not complain; fix the pattern in bench/vllm_metrics.py before spending a level on it
+KV pool 176,227 tokens against reference 168,985 (1.043x, gate +-5%): PASS
+
+level                  load     ok/f      h  TTFT p50  TTFT p99  TPOT p50  TPOT p99   medITL   interf  good/s    tok/s
+seats-c8-h00              8   24/0    0.003     667.0    2509.2     37.59     39.16    29.52     8.07    0.00    193.9
+  INVALID  ttft-not-a-service-metric: closed loop
+seats-c12-h00            12   36/0    0.664     132.4    3951.0     32.60     47.50    32.77    -0.16    1.01    303.4
+  INVALID  ttft-not-a-service-metric: closed loop
+  INVALID  measured h 0.664 against nominal 0.000: the workload is not producing the hit rate it claims
+seats-c14-h00            14   42/0    0.854     122.6    2046.2     34.26     42.87    34.42    -0.16    1.58    367.8
+  INVALID  ttft-not-a-service-metric: closed loop
+  INVALID  measured h 0.854 against nominal 0.000: the workload is not producing the hit rate it claims
+seats-c16-h00            16   48/0    0.872     150.9    2005.1     35.96     44.37    36.13    -0.17    1.76    402.0
+  INVALID  ttft-not-a-service-metric: closed loop
+  INVALID  measured h 0.872 against nominal 0.000: the workload is not producing the hit rate it claims
+seats-c20-h00            20   60/0    0.000     761.5    6968.7     66.51     68.81    40.35    26.16    0.00    278.4
+  INVALID  ttft-not-a-service-metric: closed loop
+seats-c22-h00            22   66/0    0.000     776.0    7761.7     71.47     73.98    42.11    29.36    0.00    285.4
+  INVALID  ttft-not-a-service-metric: closed loop
+seats-c24-h00            24   72/0    0.000     790.7    8645.0     76.68     79.13    43.86    32.83    0.00    290.9
+  INVALID  ttft-not-a-service-metric: closed loop
+seats-c26-h00            26   78/0    0.000     798.0    9346.3     81.17     83.79    45.38    35.79    0.00    298.2
+  INVALID  ttft-not-a-service-metric: closed loop
+seats-c28-h00            28   84/0    0.000     815.5   10185.1     86.38     89.20    47.18    39.20    0.00    301.8
+  INVALID  ttft-not-a-service-metric: closed loop
+
+seats: between 16 and 20 at TPOT p99 <= 50 ms
+levels carrying an INVALID flag: seats-c12-h00, seats-c14-h00, seats-c16-h00
+
+artefacts: results/run3-a-h00/

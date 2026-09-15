@@ -1,0 +1,20 @@
+# Apply with:  kubectl apply -k deploy/observability/prometheus
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - deployment.yaml
+  - service.yaml
+
+configMapGenerator:
+  # Same reason as the stub's ConfigMap: the generated name carries a content
+  # hash, so editing the scrape config rolls the Pod instead of leaving the old
+  # config loaded in a process that never restarted.
+  - name: prometheus-config
+    files:
+      - prometheus.yml
+      - rules.yml

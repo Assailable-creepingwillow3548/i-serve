@@ -1,0 +1,36 @@
+# The canary: a second copy of the stub Deployment with its own Service and an
+# Ingress that ingress-nginx treats as an alternative backend for the same
+# path, weighted. The procedure that applies, watches and then deletes or
+# promotes this is docs/runbook.md, "Canary rollout"; this directory is only
+# the objects it names.
+#
+# Apply with:   kubectl apply -k deploy/manifests/overlays/kind-canary
+# Roll back:    kubectl delete -k deploy/manifests/overlays/kind-canary
+#
+# Why a separate Deployment and not a second replica of the existing one: the
+# split has to be *by weight at the edge*, not by replica count. A canary Pod
+# behind the stable Service would take 1/(N+1) of the traffic and that share
+# would move every time the autoscaler moved N. The weight in
+# patch-ingress-canary.yaml does not.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: llm
+
+# Every object of the stub overlay, renamed. The suffix is what lets both
+# copies exist in one namespace, and kustomize rewrites the references between
+# them — the Ingress backend, the Service's port, the ConfigMap the Deployment
+# mounts — so nothing in the patches below names a suffixed object.
+nameSuffix: -canary
+
+resources:
+  - ../kind
+
+patches:
+  # Objects the canary shares with the stable track rather than duplicates.
+  - path: patch-drop-shared.yaml
+  # The label that keeps the two tracks apart, and the version under test.
+  - path: patch-track.yaml
+  - path: patch-version.yaml
+  # The Ingress that does the splitting.
+  - path: patch-ingress-canary.yaml

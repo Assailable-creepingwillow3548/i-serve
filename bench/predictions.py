@@ -1,0 +1,958 @@
+"""Every number bench/roofline.py predicts, printed as ten numbered tables.
+
+Split out of roofline.py because the two change for different reasons: the
+module changes when the physics or the arithmetic does, this file changes after
+every run, as the interesting operating points move. Keeping them together meant
+a diff that touched the model and a diff that touched a print statement looked
+the same.
+
+Run it before spending GPU money -- step 0 of
+`docs/benchmarks/runsheets/l40s-first-run.md` expects these tables open beside
+the pod. Every row names the section of
+docs/SLO.md it holds, and bench/tests/test_roofline.py asserts the same figures, so a
+row that stops matching its comment fails a test rather than being noticed by
+eye.
+
+Not in bench/scenarios/: that directory is for workload definitions the load
+harness sends -- prompts and arrival rates, not predictions about them. Since
+2026-08-29 the harness generates the load itself (bench/harness.py) rather than
+shelling out to `vllm bench serve`, because a controlled prefix cache hit rate
+is not something that tool can be asked for.
+
+    python3 bench/predictions.py
+    python3 bench/predictions.py --what-if --accelerator mi300x --context-len 32000
+
+The second form is the reader's, not the runsheet's: one operating point of
+their choosing instead of the ten fixed ones. The fixed tables take no
+parameters, because docs/SLO.md quotes their rows.
+"""
+
+import argparse
+import json
+import math
+import textwrap
+from dataclasses import replace
+
+from roofline import (
+    ACCELERATORS,
+    L40S,
+    L40S_RUN1,
+    MI300X,
+    QWEN2_5_7B,
+    QWEN3_8B,
+    aggregate_tokens_per_sec,
+    concurrency_ceiling,
+    cost_per_1m_tokens,
+    decode_step_bytes,
+    kv_cache_tokens,
+    max_num_seqs,
+    max_num_seqs_from_slo,
+    prefill_bytes,
+    seats_under_prefill_interference,
+    tpot_floor,
+    ttft_floor,
+)
+
+TTFT_TARGET = 0.300         # section 2, interactive
+TPOT_TARGET = 0.050         # section 2, interactive
+GMU = 0.90                  # the gpu_memory_utilization the runsheet serves at
+
+# The two workload classes of docs/SLO.md section 2, verbatim, keyed so that the
+# calculator's preset buttons and bench/export_site_data.py read them from here
+# and nowhere else. Deliberately not a third class: SLO.md *derives* both of
+# these -- 50 ms from reading speed, 200 ms as a guard against stalls nobody is
+# watching -- and a class added to this table without a derivation there would
+# be a target picked by feel, the one thing that document refuses to do. A
+# reader's own target is a --tpot-ms / --ttft-ms argument, not an entry here.
+SLO_CLASSES = {
+    "interactive": {"ttft_s": TTFT_TARGET, "tpot_s": TPOT_TARGET},
+    "batch": {"ttft_s": 3.000, "tpot_s": 0.200},
+}
+
+# Prefill interference, fitted to run 1's sweep at max_num_batched_tokens 2 048
+# and 4 000-token prompts: TPOT p50 minus median ITL at c = 13 / 23 / 32 is
+# 14.96 / 31.01 / 46.13 ms (docs/benchmarks/l40s-baseline.md section 5), linear
+# in the seat count to within 1% across that range.
+#
+# It is an interpolation over 13..32 seats and not a law: it does not pass
+# through the origin, where interference is zero by construction because there
+# is nobody to interfere. It belongs to this engine, this chunk size and this
+# closed-loop arrival pattern, exactly as eff_mem belongs to one card and one
+# phase -- so it is named for the run that produced it and never reused
+# silently.
+L40S_RUN1_INTERFERENCE_SLOPE = 1.640e-3       # seconds of extra step per seat
+L40S_RUN1_INTERFERENCE_INTERCEPT = -6.36e-3   # seconds
+L40S_RUN1_INTERFERENCE_PROVENANCE = (
+    "measured (run 1, 2026-08-18): TPOT p50 minus median ITL at c = 13/23/32, "
+    "4 000-token prompts, max_num_batched_tokens 2 048; its (1 - h) scaling "
+    "confirmed by run 3, slope ratio 0.194 against 0.200")
+
+# The fit by accelerator key. TPOT minus median ITL is a scheduler quantity --
+# how much prefill the engine lets into a decode step -- and not a bandwidth
+# one, so the same line serves both L40S entries: they differ only in eff_mem
+# and mfu, and neither enters the interference. There is no MI300X entry on
+# purpose. Lending this line to a card with a different memory system and a
+# different attention backend would print a seat count with no run behind any
+# part of it; what_if_point() says "not derivable" instead, which is true.
+# The models the calculator can be pointed at. Qwen3-8B is the one this stack
+# serves, the one every run measured and the one every figure in docs/ is about;
+# Qwen2.5-7B is a second architecture for comparison only (roofline.py). Adding
+# a third is a Model(...) and a line here -- but only for a dense, GQA,
+# full-attention model, because the formulas are not general (GLOSSARY.md,
+# "Architectures that break the standard arithmetic").
+MODELS = {
+    "qwen3-8b": QWEN3_8B,
+    "qwen2.5-7b": QWEN2_5_7B,
+}
+DEFAULT_MODEL = "qwen3-8b"
+
+# The fit below belongs to an engine, a chunk size, a card AND a model: it was
+# measured decoding Qwen3-8B. Lending it to a second architecture would be the
+# same error as lending it to the MI300X, so what_if_point() withholds it and
+# says "not derivable" for any other model.
+INTERFERENCE_MODEL = "qwen3-8b"
+
+INTERFERENCE_FITS = {
+    "l40s-run1": (L40S_RUN1_INTERFERENCE_SLOPE, L40S_RUN1_INTERFERENCE_INTERCEPT,
+                  L40S_RUN1_INTERFERENCE_PROVENANCE),
+    "l40s": (L40S_RUN1_INTERFERENCE_SLOPE, L40S_RUN1_INTERFERENCE_INTERCEPT,
+             L40S_RUN1_INTERFERENCE_PROVENANCE),
+}
+
+# Hourly rates are contract figures, not physics. The L40S rate is no longer an
+# assumption: read off the RunPod console on 2026-08-15, On-Demand, 1x L40S 48 GB
+# (48 GB VRAM, 62 GB RAM, 16 vCPU). It replaces the 0.89 the plan had guessed --
+# 11% higher, and it moves every $/1M figure in this file by the same 11%,
+# because the rate enters the cost as a plain multiplier. MI300X stays an
+# assumption, implied by $100 of AMD Developer Cloud credits budgeted as roughly
+# 50 h; re-check it before quoting it anywhere.
+L40S_HOURLY = 0.99
+MI300X_HOURLY = 2.00
+L40S_HOURLY_PROVENANCE = ("RunPod console, 2026-08-15, On-Demand, 1x L40S 48 GB "
+                          "(48 GB VRAM, 62 GB RAM, 16 vCPU)")
+MI300X_HOURLY_PROVENANCE = ("assumption: $100 of AMD Developer Cloud credits "
+                            "budgeted as roughly 50 h; re-check before quoting")
+
+# The default rate by accelerator key, with the sentence saying where it came
+# from, so that anything naming a card by its --accelerator string -- the
+# --what-if flag, the site export -- gets both together, and so that a test can
+# assert every card in ACCELERATORS has one. Still a default and not a property
+# of the card: roofline.cost_per_1m_tokens takes the rate as a parameter, and
+# --hourly-rate overrides this table for reserved capacity or another provider.
+HOURLY_RATES = {
+    "l40s-run1": (L40S_HOURLY, L40S_HOURLY_PROVENANCE),
+    "l40s": (L40S_HOURLY, L40S_HOURLY_PROVENANCE),
+    "mi300x": (MI300X_HOURLY, MI300X_HOURLY_PROVENANCE),
+}
+
+PROSE_WIDTH = 88            # comfortable reading width, independent of the table
+
+
+def table_header(title: str, blurb: str, columns: str = "") -> None:
+    """Title, what the table answers, then the column row -- above every table.
+
+    The rules are as wide as the column row itself rather than a fixed 79, so
+    tables that differ by 45 characters of width each get their own underline
+    instead of one arbitrary rule that overshoots half of them. The prose is
+    wrapped narrower than that: a 119-column paragraph is not read, it is
+    skimmed, and these paragraphs exist to be read once beside a running pod.
+    """
+    width = len(columns) if columns else PROSE_WIDTH
+    print()
+    print(title)
+    print("=" * width)
+    print(textwrap.fill(blurb, width=min(width, PROSE_WIDTH)))
+    print()
+    if columns:
+        print(columns)
+        print("-" * len(columns))
+
+
+def sizes() -> None:
+    """The two derived constants of section 3, and the GQA counterfactual."""
+    table_header(
+        f"MODEL: {QWEN3_8B.name}",
+        "Every table below is built from these two numbers. Weights are read "
+        "once per decode step no matter how many sequences are in flight; KV "
+        "per token is multiplied by batch and by context, so it is the only "
+        "term that grows. That is why GQA -- 8 KV heads, not 32 -- is the "
+        "whole saving: 4x off the term that grows, paid for on the side of "
+        "the roofline that is not binding. docs/SLO.md section 3.",
+    )
+    print(f"  weights          {QWEN3_8B.weights_bytes / 1e9:.1f} GB")
+    # SI units throughout: vendor bandwidth figures are SI, so GB/s divides
+    # cleanly into GB. Mixing in GiB is where roofline arithmetic quietly drifts.
+    print(f"  KV per token     {QWEN3_8B.kv_bytes_per_token / 1e3:.0f} KB")
+
+    # dataclasses.replace, not a __dict__ copy: it goes through __init__, so a
+    # future validator or __post_init__ runs on the counterfactual too. The
+    # trick only ever worked because nothing validates yet.
+    mha = replace(QWEN3_8B, name="hypothetical MHA", num_kv_heads=32)
+    print(f"  KV per token if MHA (n_kv=32)  {mha.kv_bytes_per_token / 1e3:.0f} KB")
+
+
+def decode_table() -> None:
+    """TPOT floors at operating points each card can actually hold.
+
+    The L40S batch-64 row this table used to carry was dropped: 37.75 GB of KV
+    against 26.8 GB free is arithmetically fine and operationally meaningless.
+    A floor says what the physics permits, not what the card can seat.
+    """
+    cases = [
+        # accel, batch, context_len
+        (MI300X,  64, 4000),   # section 5, the batching table
+        (MI300X, 265, 4000),   # section 6, the full card: 46.6 ms against 50
+        (L40S,    45, 4000),   # its capacity limit -- 71 ms, well past the SLO
+        (L40S,    23, 4000),   # its latency limit -- 49.55 ms, what ships
+        (L40S,     1, 4000),
+        (L40S,     1,    0),   # section 4: the floor is taken at empty context
+    ]
+    table_header(
+        "TABLE 1: TPOT floors -- one decode step, at points each card can hold",
+        "A decode step moves weights + batch x context x KV-per-token, and the "
+        "floor is those bytes divided by the card's derated bandwidth. 'ratio' "
+        "is the memory side over the compute side: decode is memory-bound by "
+        "two orders of magnitude, and no batch size on these cards changes "
+        "that. The last row is the same card at empty context -- the batch-1 "
+        "floor of section 4, which is lower than the floor at any real "
+        "operating point. docs/SLO.md sections 4-5.",
+        f"{'accelerator':<20}{'batch':>6}{'ctx':>6}{'bytes/step':>12}"
+        f"{'TPOT floor':>12}{'bound by':>10}{'ratio':>8}",
+    )
+    for accel, batch, ctx in cases:
+        floor = tpot_floor(QWEN3_8B, accel, batch, ctx)
+        gb = decode_step_bytes(QWEN3_8B, batch, ctx) / 1e9
+        print(f"{accel.name:<20}{batch:>6}{ctx:>6}{gb:>9.2f} GB"
+              f"{floor.seconds * 1e3:>9.2f} ms{floor.bound_by:>10}"
+              f"{floor.ratio:>7.1f}x")
+
+
+def latency_limit_table() -> None:
+    """max_num_seqs_from_slo with the round trip that checks it.
+
+    n must fit the budget and n+1 must break it. Printed rather than asserted
+    here for the same reason roofline() returns bound_by instead of asserting
+    it -- an assert disappears under -O, a column does not. The assert version
+    lives in bench/tests/test_roofline.py, which is where it belongs.
+    """
+    cases = [
+        # accel, context_len, tpot_target -- the latency half of section 6
+        (L40S,   4000, 0.050),   # 23 by latency; 45 fit, so latency binds
+        (L40S,   4000, 0.030),   # same card, tighter target: 2 sequences
+        (MI300X, 4000, 0.050),   # 286 by latency; 265 fit, so capacity binds
+        (L40S,   4000, 0.020),   # below the batch-1 floor: no batch qualifies
+    ]
+    table_header(
+        "TABLE 2: max_num_seqs from the latency side, and the round trip",
+        "How many sequences the TPOT target permits, checked by inverting the "
+        "answer: the floor at n must fit inside the target and the floor at "
+        "n+1 must break it. The boundary is one sequence wide, which is why "
+        "the result is floored and never rounded, and why a target below the "
+        "batch-1 floor answers 0 rather than a negative number. "
+        "docs/SLO.md section 6.",
+        f"{'accelerator':<20}{'ctx':>6}{'TPOT target':>13}{'max_num_seqs':>14}"
+        f"{'floor at n':>13}{'floor at n+1':>15}{'round trip':>13}",
+    )
+    for accel, ctx, target in cases:
+        n = max_num_seqs_from_slo(QWEN3_8B, accel, ctx, target)
+
+        at_n = tpot_floor(QWEN3_8B, accel, n, ctx).seconds if n >= 1 else None
+        at_next = tpot_floor(QWEN3_8B, accel, n + 1, ctx).seconds
+        ok = (at_n is None or at_n <= target) and at_next > target
+
+        cell_n = f"{at_n * 1e3:.2f} ms" if at_n is not None else "n/a"
+        print(f"{accel.name:<20}{ctx:>6}{target * 1e3:>10.0f} ms{n:>14}"
+              f"{cell_n:>13}{at_next * 1e3:>12.2f} ms"
+              f"{'ok' if ok else 'BROKEN':>13}")
+
+
+def shipping_table() -> None:
+    """Both limits side by side, and which one an operator is actually against."""
+    fp8_kv = replace(QWEN3_8B, name="Qwen3-8B FP8 KV", kv_dtype_bytes=1)
+    cases = [
+        # model, accel, context_len, tpot_target, gpu_memory_utilization
+        (QWEN3_8B, L40S,    4000, 0.050, 0.9),   # section 4: latency binds, by 2x
+        (QWEN3_8B, MI300X,  4000, 0.050, 0.9),   # section 4: capacity binds, by 8%
+        (QWEN3_8B, MI300X, 32000, 0.050, 0.9),   # section 8: reasoning-length context
+        (fp8_kv,   MI300X,  4000, 0.050, 0.9),   # section 6: the falsifiable ~530
+    ]
+    table_header(
+        "TABLE 3: both limits on max_num_seqs, and which one an operator is against",
+        "Both are memory limits, and they count different things: 'by "
+        "capacity' is how many sequences' KV the card physically holds, 'by "
+        "latency' how many it can re-read every single token and still land "
+        "inside the TPOT target. max_num_seqs is the smaller of the two; 'gap' "
+        "is their ratio. On L40S latency binds at half the seats that fit "
+        "(1.96x), on MI300X the two nearly coincide (1.08x) -- a property of "
+        "the card and the target, never a rule about GPUs. The FP8 KV row "
+        "doubles both limits and leaves the gap untouched. "
+        "docs/SLO.md sections 4 and 6.",
+        f"{'model':<18}{'accelerator':<20}{'ctx':>7}{'gmu':>6}"
+        f"{'KV tokens':>12}{'by capacity':>13}{'by latency':>12}"
+        f"{'max_num_seqs':>14}{'bound by':>10}{'gap':>7}",
+    )
+    for model, accel, ctx, target, gmu in cases:
+        c = max_num_seqs(model, accel, ctx, target, gmu)
+        pool = kv_cache_tokens(model, accel, gmu)
+        print(f"{model.name:<18}{accel.name:<20}{ctx:>7}{gmu:>6.2f}"
+              f"{pool / 1e6:>9.2f} M{c.by_capacity:>13}{c.by_latency:>12}"
+              f"{c.sequences:>14}{c.bound_by:>10}{c.ratio:>6.2f}x")
+
+
+def prefill_table() -> None:
+    """TTFT floors, and how much of the 300 ms budget each one has already spent."""
+    cases = [
+        # accel, prompt_tokens
+        (MI300X,  2000),   # section 4: 47.3 ms of a 300 ms budget
+        (L40S,    2000),   # section 4: 170.6 ms of the same budget
+        (L40S,     512),   # a short prompt, where prefill is barely compute-bound
+        (L40S,   32000),   # section 8: a reasoning-length prompt, budget gone
+    ]
+    table_header(
+        "TABLE 4: TTFT floors, and what prefill alone has already spent",
+        "The last column is the floor as a share of the 300 ms interactive "
+        "budget of section 2 -- what is gone before a single token of queue or "
+        "overhead is counted. 'ratio' shows prefill is compute-bound by prompt "
+        "length, not by nature: at 512 tokens it is 1.6x, nearly balanced, and "
+        "a short-prompt workload is a different machine. The bytes column "
+        "includes the KV that prefill writes for decode to read. "
+        "docs/SLO.md sections 4 and 8.",
+        f"{'accelerator':<20}{'prompt':>8}{'bytes':>10}{'TTFT floor':>13}"
+        f"{'bound by':>10}{'ratio':>8}{'of 300 ms budget':>19}",
+    )
+    for accel, prompt in cases:
+        floor = ttft_floor(QWEN3_8B, accel, prompt)
+        gb = prefill_bytes(QWEN3_8B, prompt) / 1e9
+        share = floor.seconds / TTFT_TARGET
+        print(f"{accel.name:<20}{prompt:>8}{gb:>7.2f} GB"
+              f"{floor.seconds * 1e3:>10.1f} ms{floor.bound_by:>10}"
+              f"{floor.ratio:>7.1f}x{share:>18.0%}")
+
+
+def cost_table() -> None:
+    """The same floors as money, which is the only form a customer argues with.
+
+    Every figure here is a floor divided by a rate, so it is the cheapest the
+    card could possibly be -- a real run lands above it, and the gap is the
+    same queueing and overhead the floors leave out.
+    """
+    cases = [
+        # accel, batch, context_len, hourly_rate
+        (L40S,    23, 4000, L40S_HOURLY),     # what ships on L40S: its latency limit
+        (L40S,     1, 4000, L40S_HOURLY),     # one user alone on the card
+        (MI300X, 265, 4000, MI300X_HOURLY),   # what ships on MI300X: its capacity limit
+        (MI300X,   1, 4000, MI300X_HOURLY),
+    ]
+    table_header(
+        "TABLE 5: the same floors as money",
+        "Batching divides a fixed hourly bill across more streams, so the same "
+        "card at two operating points differs 13x in cost per token -- and the "
+        "cheap point is also the slower one per user, which is the trade an "
+        "SLO exists to settle. Every figure is a floor divided by a rate, so "
+        "it is a lower bound; the rates are contract assumptions, not physics, "
+        "and are re-checked before being quoted. docs/SLO.md section 7.",
+        f"{'accelerator':<20}{'batch':>6}{'ctx':>6}{'$/h':>7}{'TPOT':>10}"
+        f"{'tok/s/user':>12}{'tok/s total':>13}{'$/1M tokens':>14}",
+    )
+    for accel, batch, ctx, rate in cases:
+        tpot = tpot_floor(QWEN3_8B, accel, batch, ctx).seconds
+        total = aggregate_tokens_per_sec(QWEN3_8B, accel, batch, ctx)
+        print(f"{accel.name:<20}{batch:>6}{ctx:>6}{rate:>7.2f}"
+              f"{tpot * 1e3:>7.2f} ms{1 / tpot:>12.0f}{total:>13.0f}"
+              f"{cost_per_1m_tokens(total, rate):>13.3f}")
+
+
+def sweep_concurrency_table() -> None:
+    """One floor per level of the concurrency sweep -- runsheet step 4.
+
+    Tables 1-5 print the operating points the *document* argues about; this one
+    prints the levels a *run* is actually going to send, which is a different
+    list and the reason the runsheet could not be filled from table 1 alone.
+    Every level here has a predicted-vs-measured row waiting for it.
+
+    The last column is the one that is easy to skip: the sweep sends 200 output
+    tokens on top of the 4 000 input, so a seat costs 4 200 tokens of KV, not
+    4 000. The pool seats fewer sequences than the 45 of section 4 as a result,
+    and the top level is therefore predicted to run out of memory rather than
+    merely to be slow -- a falsifiable statement, unlike "watch for preemptions".
+    Which mechanism answers is left to the run: 45 prefills of 4 000 still fit,
+    so the engine may preempt a running sequence or may queue the last requests,
+    and the runsheet's step 4 predicts the pair rather than one of them.
+    """
+    ctx, out = 4000, 200
+    levels = (1, 4, 8, 16, 23, 24, 32, 45)
+    seats = concurrency_ceiling(QWEN3_8B, L40S, ctx + out, GMU)
+    seats_ignoring_output = concurrency_ceiling(QWEN3_8B, L40S, ctx, GMU)
+
+    table_header(
+        "TABLE 6: the concurrency sweep, level by level (runsheet step 4)",
+        f"L40S at {ctx} tokens of context: the seven levels runsheet step 4 "
+        f"sends, plus the concurrency 4 that step 5 holds fixed while it moves "
+        f"the prompt instead. "
+        f"'inside 50 ms' is the interactive TPOT target of section 2: the "
+        f"crossing sits between 23 and 24, one sequence wide, which is what "
+        f"makes the pair worth two levels of GPU time. 'KV seat' counts the "
+        f"{ctx} input plus the {out} output tokens a seat actually holds, so "
+        f"the pool seats {seats} sequences and not the "
+        f"{seats_ignoring_output} of section 4 -- every level above {seats} "
+        f"runs out of seats, which the engine answers by preempting a running "
+        f"sequence or by making the next one wait. "
+        f"docs/SLO.md sections 4 and 6.",
+        f"{'concurrency':>12}{'bytes/step':>12}{'TPOT floor':>12}"
+        f"{'inside 50 ms':>14}{'KV seat @ 4 200':>17}",
+    )
+    for batch in levels:
+        floor = tpot_floor(QWEN3_8B, L40S, batch, ctx)
+        gb = decode_step_bytes(QWEN3_8B, batch, ctx) / 1e9
+        inside = "yes" if floor.seconds <= TPOT_TARGET else "no"
+        fits = "fits" if batch <= seats else "no seat"
+        print(f"{batch:>12}{gb:>9.2f} GB{floor.seconds * 1e3:>9.2f} ms"
+              f"{inside:>14}{fits:>17}")
+
+    # The two figures the startup log prints, which is where the runsheet's
+    # checkpoints A and B compare a derivation against the engine's own answer.
+    # vLLM divides the pool by max_model_len, not by the length actually sent.
+    pool = kv_cache_tokens(QWEN3_8B, L40S, GMU)
+    print()
+    print(f"  KV pool {pool:,.0f} tokens -> logged maximum concurrency "
+          f"{pool / 4096:.1f}x at max_model_len 4 096 (checkpoint A), "
+          f"{pool / 9000:.1f}x at 9 000 (checkpoint B)")
+
+
+def sweep_length_table(accel=L40S, batch: int = 4, number: int = 7) -> None:
+    """Prompt length at a fixed batch -- runsheet step 5, and the MI300X's mfu read.
+
+    Parametric in the card and the batch since 2026-09-04, because the MI300X
+    calibration sweep takes its prefill points at batch 1 -- one request alone
+    on the card is the only level whose TTFT is a prefill and nothing else, and
+    it is the level run 1 fitted mfu to. The defaults reproduce table 7.
+
+    Two floors per level, because the two phases answer differently to the same
+    knob: TTFT doubles with the prompt (prefill is compute-bound and linear in
+    tokens), TPOT creeps (the prompt only enters decode as the KV share of one
+    step's traffic). The 'x prev' columns are the shape the runsheet reads out
+    loud, and reading a ratio is what makes a wrong one visible.
+
+    'max_model_len needed' is the trap this table exists to keep in view: the
+    level sends the prompt *plus* 200 output tokens, and a limit set to the
+    prompt alone rejects every request at the longest level.
+    """
+    out = 200
+    prompts = (2000, 4000, 8000)
+
+    table_header(
+        f"TABLE {number}: the prompt-length sweep, level by level (runsheet step 5)",
+        f"{accel.name} at concurrency {batch}, the three lengths the runsheet sends. "
+        f"Both floors are predictions the measurement must sit above; the "
+        f"measured TTFT sits further above its floor than the TPOT does, "
+        f"because at concurrency {batch} the requests queue behind each other's "
+        f"prefills and that queue is not in any floor. docs/SLO.md section 4.",
+        f"{'input':>8}{'TTFT floor':>13}{'x prev':>9}{'TPOT floor':>13}"
+        f"{'x prev':>9}{'max_model_len needed':>22}",
+    )
+    prev_ttft = prev_tpot = None
+    for prompt in prompts:
+        ttft = ttft_floor(QWEN3_8B, accel, prompt).seconds
+        tpot = tpot_floor(QWEN3_8B, accel, batch, prompt).seconds
+        ttft_x = f"{ttft / prev_ttft:.2f}x" if prev_ttft else "--"
+        tpot_x = f"{tpot / prev_tpot:.2f}x" if prev_tpot else "--"
+        print(f"{prompt:>8}{ttft * 1e3:>10.1f} ms{ttft_x:>9}"
+              f"{tpot * 1e3:>10.2f} ms{tpot_x:>9}{prompt + out:>22}")
+        prev_ttft, prev_tpot = ttft, tpot
+
+
+def prefix_cache_table() -> None:
+    """What a prefix cache hit rate is worth in seats -- docs/SLO.md section 6.
+
+    The only table here whose driving variable is not a property of the card or
+    of the target. h is a property of the traffic: whether customers send the
+    same system prompt. That is why this table has no MI300X row -- the answer
+    would be identical arithmetic on a card where the binding limit is capacity,
+    and the seats it buys would already be gone.
+    """
+    table_header(
+        "TABLE 8: prefix cache hit rate against the seat count",
+        "Prefix caching removes prefill work rather than redistributing it, so "
+        "it scales the interference term by (1 - h) and leaves the decode step "
+        "alone. h = 0 reproduces run 1's measured TPOT p50 crossing between 13 "
+        "and 14, which is the only check this model has. The SLO metric is p99 "
+        "and sits about one seat lower throughout. Unvalidated against a run "
+        "that varies h -- docs/SLO.md section 10.",
+        f"{'hit rate h':>12}{'seats at 50 ms':>17}{'seats gained':>15}"
+        f"{'of the gap closed':>20}",
+    )
+    at_zero = seats_under_prefill_interference(
+        QWEN3_8B, L40S_RUN1, 4100, TPOT_TARGET,
+        L40S_RUN1_INTERFERENCE_SLOPE, L40S_RUN1_INTERFERENCE_INTERCEPT, 0.0)
+    at_one = seats_under_prefill_interference(
+        QWEN3_8B, L40S_RUN1, 4100, TPOT_TARGET,
+        L40S_RUN1_INTERFERENCE_SLOPE, L40S_RUN1_INTERFERENCE_INTERCEPT, 1.0)
+
+    for h in (0.0, 0.25, 0.50, 0.70, 0.80, 0.90, 0.95, 1.0):
+        seats = seats_under_prefill_interference(
+            QWEN3_8B, L40S_RUN1, 4100, TPOT_TARGET,
+            L40S_RUN1_INTERFERENCE_SLOPE, L40S_RUN1_INTERFERENCE_INTERCEPT, h)
+        gained = seats - at_zero
+        share = gained / (at_one - at_zero)
+        print(f"{h:>12.2f}{seats:>17.2f}{gained:>15.2f}{share:>19.0%}")
+
+
+def mi300x_sweep_table() -> None:
+    """One floor per level of the MI300X calibration sweep -- runsheet mi300x-run-1.
+
+    Table 6's shape at the other card's scale, and the scale is the point: the
+    L40S crossed 50 ms at 23 seats with 43 seats in the pool, so latency ended
+    its curve. Here the pool ends it. 'KV seat' uses the 7 % the L40S startup
+    log took off the derived pool (docs/benchmarks/l40s-baseline.md section 2)
+    -- non-torch memory, the activation peak and the graph pool are paid on any
+    card, and a shelf predicted from the clean arithmetic would sit a dozen
+    seats too high. The engine's own log still outranks both figures.
+
+    The default max_num_seqs of 256 is the third limit docs/SLO.md section 10
+    names: it sits between the corrected shelf and the latency limit, so a level
+    above it queues before it can preempt. Uncalibrated coefficients on purpose
+    -- section 9 says the first run on a card is reported against them.
+    """
+    ctx, out = 4000, 200
+    levels = (1, 8, 32, 64, 128, 192, 224, 240, 256, 288)
+    default_max_num_seqs = 256
+    pool_shortfall = 0.07     # L40S run 1: derived pool 7.6 % above the logged one
+
+    pool = kv_cache_tokens(QWEN3_8B, MI300X, GMU)
+    seats_derived = concurrency_ceiling(QWEN3_8B, MI300X, ctx + out, GMU)
+    seats_corrected = int(pool * (1 - pool_shortfall) // (ctx + out))
+    by_latency = max_num_seqs_from_slo(QWEN3_8B, MI300X, ctx, TPOT_TARGET)
+
+    table_header(
+        "TABLE 9: the MI300X calibration sweep, level by level",
+        f"MI300X at {ctx} tokens of context, uncalibrated eff_mem "
+        f"{MI300X.achieved_bandwidth} and mfu {MI300X.mfu}. The pool seats "
+        f"{seats_derived} sequences of {ctx + out} tokens by the clean "
+        f"arithmetic and about {seats_corrected} once the L40S's "
+        f"{pool_shortfall:.0%} startup-log shortfall is applied; the latency "
+        f"limit at 50 ms is {by_latency}. So the prediction is the inverse of "
+        f"the L40S's: every level inside the pool stays inside the SLO, and the "
+        f"first thing to break is capacity, not latency. The default "
+        f"max_num_seqs {default_max_num_seqs} sits between the two, so the "
+        f"top level queues rather than preempts -- unless the log's pool is "
+        f"smaller still. docs/SLO.md sections 6 and 10.",
+        f"{'concurrency':>12}{'bytes/step':>12}{'TPOT floor':>12}"
+        f"{'inside 50 ms':>14}{'KV seat @ 4 200':>17}{'vs max_num_seqs':>17}",
+    )
+    for batch in levels:
+        floor = tpot_floor(QWEN3_8B, MI300X, batch, ctx)
+        gb = decode_step_bytes(QWEN3_8B, batch, ctx) / 1e9
+        inside = "yes" if floor.seconds <= TPOT_TARGET else "no"
+        if batch <= seats_corrected:
+            fits = "fits"
+        elif batch <= seats_derived:
+            fits = "fits?"       # inside the clean arithmetic, outside the corrected pool
+        else:
+            fits = "no seat"
+        queue = "queues" if batch > default_max_num_seqs else "runs"
+        print(f"{batch:>12}{gb:>9.2f} GB{floor.seconds * 1e3:>9.2f} ms"
+              f"{inside:>14}{fits:>17}{queue:>17}")
+
+    print()
+    print(f"  KV pool {pool:,.0f} tokens derived, ~{pool * (1 - pool_shortfall):,.0f} "
+          f"after the {pool_shortfall:.0%} shortfall -> logged maximum concurrency "
+          f"{pool / 9000:.1f}x derived, ~{pool * (1 - pool_shortfall) / 9000:.1f}x "
+          f"corrected, at max_model_len 9 000 (checkpoint A)")
+
+
+def _finite(value: float | None) -> float | None:
+    """inf -> None, so the dict survives json.dumps(allow_nan=False).
+
+    Roofline.ratio and Concurrency.ratio are math.inf at a batch of zero, and
+    json.dumps writes that as the bare word Infinity, which is not JSON and
+    which JSON.parse in a browser refuses. None is the honest value: at zero
+    seats the gap between two limits is not a question with an answer.
+    """
+    return None if value is None or math.isinf(value) else value
+
+
+def what_if_point(accelerator: str = "l40s-run1",
+                  model: str = DEFAULT_MODEL,
+                  context_len: int = 4200,
+                  prompt_tokens: int = 4000,
+                  tpot_target: float = TPOT_TARGET,
+                  ttft_target: float = TTFT_TARGET,
+                  gpu_memory_utilization: float = GMU,
+                  kv_dtype_bytes: int = 2,
+                  hourly_rate: float | None = None,
+                  hit_rate: float = 0.0) -> dict:
+    """One operating point, as data. Everything else is a rendering of this.
+
+    The printer below, the --json flag and bench/export_site_data.py all read
+    this dict and compute nothing of their own -- which is what lets the
+    calculator on the Pages site claim its numbers are this repository's: the
+    golden grid it is checked against is rows of this function's output.
+
+    The keys are a contract. bench/tests/test_predictions_json.py freezes the
+    set, because a renamed key breaks the JavaScript silently -- undefined is
+    not an error there, it is a blank cell.
+
+    Three things the dict says that the nine text lines did not:
+
+      * "ttft_floor_uncached" -- the floor at prompt x (1 - h), the tokens the
+        cache leaves to be computed. It is the gate bench/harness.py judges a
+        level against (check_prefill_floor), and the floor a reader with a
+        warm cache should compare their TTFT to. The full-prompt floor stays
+        beside it, because with h = 0 they are the same number.
+      * "service" -- the seats a service can promise once prefill interference
+        is priced in (roofline.seats_under_prefill_interference), for the
+        cards that have a fit. Computed at the same context_len as the rest of
+        the point, prompt + output; table 8 uses the mean occupancy of 4 100,
+        and the 100 tokens are 0.02 ms per seat, a third of a seat at 50 ms.
+        Stated so the ~0.3 seat between this and table 8 reads as a convention
+        and not as a bug.
+      * "error" -- a point with no operating point. Below the weights fitting,
+        or below one sequence, the card cannot serve this configuration, and
+        the dict says so in a sentence instead of raising, because a slider
+        can be dragged there and the page has to be able to say why the cells
+        are blank.
+
+    Every figure is still a floor, so a real run lands above it.
+    """
+    if not 0.0 <= hit_rate <= 1.0:
+        raise ValueError("hit_rate is a share of prompt tokens, so 0 <= h <= 1")
+    accel = ACCELERATORS[accelerator]
+    model_key, base = model, MODELS[model]
+    model = base if kv_dtype_bytes == 2 else replace(
+        base, name=f"{base.name} FP8 KV", kv_dtype_bytes=kv_dtype_bytes)
+    # The rate is a contract figure, not physics, so it follows the card only as
+    # a default: any rate can be passed, and on reserved capacity it should be.
+    if hourly_rate is None:
+        hourly_rate = HOURLY_RATES[accelerator][0]
+
+    point: dict = {
+        "inputs": {
+            "accelerator": accelerator,
+            "model": model_key,
+            "context_len": context_len,
+            "prompt_tokens": prompt_tokens,
+            "tpot_target_s": tpot_target,
+            "ttft_target_s": ttft_target,
+            "gpu_memory_utilization": gpu_memory_utilization,
+            "kv_dtype_bytes": kv_dtype_bytes,
+            "hourly_rate": hourly_rate,
+            "hit_rate": hit_rate,
+        },
+        "model_name": model.name,
+        "accelerator_name": accel.name,
+        "coefficients": {
+            "eff_mem": accel.achieved_bandwidth,
+            "mfu": accel.mfu,
+            "provenance": accel.provenance,
+        },
+        "kv_pool_tokens": None,
+        "seats": None,
+        "tpot_floor_at_max_num_seqs": None,
+        "ttft_floor": None,
+        "ttft_floor_uncached": None,
+        "aggregate_tokens_per_sec": None,
+        "cost_per_1m_output_tokens": None,
+        "service": None,
+        "error": None,
+    }
+
+    # Prefill first: it needs no KV pool, so it has an answer even where the
+    # decode side has none.
+    prefill = ttft_floor(model, accel, prompt_tokens)
+    uncached = max(1, round(prompt_tokens * (1.0 - hit_rate)))
+    prefill_uncached = ttft_floor(model, accel, uncached)
+    point["ttft_floor"] = {
+        "seconds": prefill.seconds,
+        "bound_by": prefill.bound_by,
+        "ratio": _finite(prefill.ratio),
+        "share_of_target": prefill.seconds / ttft_target,
+    }
+    point["ttft_floor_uncached"] = {
+        "seconds": prefill_uncached.seconds,
+        "uncached_tokens": uncached,
+        "share_of_target": prefill_uncached.seconds / ttft_target,
+    }
+
+    try:
+        pool = kv_cache_tokens(model, accel, gpu_memory_utilization)
+    except ValueError as exc:
+        point["error"] = str(exc)
+        return point
+    seats = max_num_seqs(model, accel, context_len, tpot_target,
+                         gpu_memory_utilization)
+    point["kv_pool_tokens"] = pool
+    point["seats"] = {
+        "by_capacity": seats.by_capacity,
+        "by_latency": seats.by_latency,
+        "max_num_seqs": seats.sequences,
+        "bound_by": seats.bound_by,
+        "gap": _finite(seats.ratio) if seats.sequences else None,
+    }
+    if seats.sequences == 0:
+        point["error"] = (
+            f"Not one sequence fits: {context_len:,} tokens of reserved context "
+            f"against a {pool / 1e6:.2f} M token pool, or a TPOT target below the "
+            f"batch-1 decode step. Lower the context length, loosen the target, "
+            f"raise gpu_memory_utilization, or take a bigger card -- there is no "
+            f"operating point here to price.")
+        return point
+
+    decode = tpot_floor(model, accel, seats.sequences, context_len)
+    total = aggregate_tokens_per_sec(model, accel, seats.sequences, context_len)
+    point["tpot_floor_at_max_num_seqs"] = {
+        "seconds": decode.seconds,
+        "bound_by": decode.bound_by,
+        "ratio": _finite(decode.ratio),
+        "share_of_target": decode.seconds / tpot_target,
+    }
+    point["aggregate_tokens_per_sec"] = total
+    point["cost_per_1m_output_tokens"] = cost_per_1m_tokens(total, hourly_rate)
+
+    fit = INTERFERENCE_FITS.get(accelerator) if model_key == INTERFERENCE_MODEL else None
+    if fit is not None:
+        slope, intercept, provenance = fit
+        by_interference = seats_under_prefill_interference(
+            model, accel, context_len, tpot_target, slope, intercept, hit_rate)
+        # floor, never round, for the reason max_num_seqs_from_slo gives; and
+        # the pool still has to seat them -- at a long context the capacity
+        # limit binds before the interference does, and a service cannot
+        # promise seats it has no KV for.
+        shipped = max(math.floor(by_interference), 0)
+        bound_by = "interference"
+        if seats.by_capacity < shipped:
+            shipped, bound_by = seats.by_capacity, "capacity"
+        service: dict = {
+            "seats_at_hit_rate": by_interference,
+            "seats_shipped": shipped,
+            "bound_by": bound_by,
+            "tpot_floor_at_seats_s": None,
+            "aggregate_tokens_per_sec": None,
+            "cost_per_1m_output_tokens": None,
+            "fit": {"slope_s_per_seat": slope, "intercept_s": intercept,
+                    "provenance": provenance},
+            # Run 3 measured 37.8 seats at h = 0.8 against the 24.3 this line
+            # predicts (docs/SLO.md section 6): the fit is right about the
+            # mechanism and low about the seats once the cache serves most of
+            # the prompt. Said on the number, not in a footnote.
+            "note": ("a floor, not an estimate: at h = 0.8 run 3 measured 37.8 "
+                     "seats against 24.3 predicted (docs/SLO.md section 6)"
+                     if hit_rate > 0.5 else None),
+        }
+        if shipped > 0:
+            step = tpot_floor(model, accel, shipped, context_len).seconds
+            rate = aggregate_tokens_per_sec(model, accel, shipped, context_len)
+            service["tpot_floor_at_seats_s"] = step
+            service["aggregate_tokens_per_sec"] = rate
+            service["cost_per_1m_output_tokens"] = cost_per_1m_tokens(rate, hourly_rate)
+        point["service"] = service
+    return point
+
+
+def what_if(accelerator: str = "l40s-run1",
+            model: str = DEFAULT_MODEL,
+            context_len: int = 4200,
+            prompt_tokens: int = 4000,
+            tpot_target: float = TPOT_TARGET,
+            ttft_target: float = TTFT_TARGET,
+            gpu_memory_utilization: float = GMU,
+            kv_dtype_bytes: int = 2,
+            hourly_rate: float | None = None,
+            hit_rate: float = 0.0) -> None:
+    """One operating point, named on the command line, answered three ways.
+
+    The ten tables above print the operating points *this document* argues
+    about, and docs/SLO.md quotes their rows -- which is exactly why none of
+    them takes a parameter. This one takes nothing else. It answers the question
+    a reader actually arrives with, about their card at their context length,
+    and it is why route 1 of docs/audience.md no longer ends at editing a Python
+    file.
+
+    It is tables 3, 4 and 5 collapsed onto a single point: how many seats the
+    card gives, what one token costs in time, what a million cost in money.
+    Every figure is still a floor, so a real run lands above it -- the gap is
+    the queueing and overhead the arithmetic leaves out, and finding that gap is
+    what docs/benchmarks/ is for.
+
+    A printer and nothing else, since 2026-09-13: every number here is read out
+    of what_if_point(), and the first nine lines are the ones docs/audience.md
+    quotes, so they are kept byte-identical by a test. What follows them is the
+    service view -- the seats once prefill interference is priced in, at the
+    hit rate asked for -- which the hardware view above cannot see.
+    """
+    point = what_if_point(accelerator=accelerator, model=model,
+                          context_len=context_len, prompt_tokens=prompt_tokens,
+                          tpot_target=tpot_target, ttft_target=ttft_target,
+                          gpu_memory_utilization=gpu_memory_utilization,
+                          kv_dtype_bytes=kv_dtype_bytes,
+                          hourly_rate=hourly_rate, hit_rate=hit_rate)
+    hourly_rate = point["inputs"]["hourly_rate"]
+
+    table_header(
+        f"WHAT IF: {point['model_name']} on {point['accelerator_name']}",
+        f"One operating point: {context_len:,} tokens of context reserved per "
+        f"seat, a {prompt_tokens:,}-token prompt, gpu_memory_utilization "
+        f"{gpu_memory_utilization:.2f}, against a TPOT target of "
+        f"{tpot_target * 1e3:.0f} ms and a TTFT target of "
+        f"{ttft_target * 1e3:.0f} ms. Floors, not forecasts: docs/SLO.md "
+        "sections 4, 6 and 7 derive every line below, and the coefficients "
+        "printed first decide how much of the card the arithmetic is allowed "
+        "to assume.",
+    )
+
+    coef = point["coefficients"]
+    print(f"  {'coefficients':<22}eff_mem {coef['eff_mem']:.2f}, "
+          f"mfu {coef['mfu']:.3f} -- {coef['provenance']}")
+    if point["seats"] is None:
+        print(f"\n  {point['error']}")
+        print()
+        return
+    seats = point["seats"]
+    print(f"  {'KV pool':<22}{point['kv_pool_tokens'] / 1e6:.2f} M tokens")
+    print(f"  {'seats by capacity':<22}{seats['by_capacity']}")
+    print(f"  {'seats by latency':<22}{seats['by_latency']}")
+    gap = f", gap {seats['gap']:.2f}x" if seats["gap"] is not None else ""
+    print(f"  {'max_num_seqs':<22}{seats['max_num_seqs']}"
+          f"   bound by {seats['bound_by']}{gap}")
+
+    if point["error"]:
+        print(f"\n  {point['error']}")
+        print()
+        return
+
+    decode = point["tpot_floor_at_max_num_seqs"]
+    prefill = point["ttft_floor"]
+    n = seats["max_num_seqs"]
+    print(f"  {'TPOT floor':<22}{decode['seconds'] * 1e3:.2f} ms at "
+          f"{n} seats   bound by {decode['bound_by']}, "
+          f"{decode['ratio']:.1f}x   ({decode['share_of_target']:.0%} of target)")
+    print(f"  {'TTFT floor':<22}{prefill['seconds'] * 1e3:.1f} ms at "
+          f"{prompt_tokens:,} tokens   bound by {prefill['bound_by']}, "
+          f"{prefill['ratio']:.1f}x   ({prefill['share_of_target']:.0%} of target)")
+    print(f"  {'aggregate':<22}{point['aggregate_tokens_per_sec']:,.0f} tok/s total, "
+          f"{1 / decode['seconds']:.0f} tok/s per seat")
+    print(f"  {'cost':<22}${point['cost_per_1m_output_tokens']:.3f} / 1M "
+          f"tokens at ${hourly_rate:.2f}/h")
+
+    # The service view. Everything above is what the hardware permits; this is
+    # what a service can promise once every arriving prompt's prefill lands
+    # inside somebody's decode step -- 31 against 13 on this card at h = 0.
+    h = f"h={hit_rate:.2f}"
+    unc = point["ttft_floor_uncached"]
+    print(f"  {f'TTFT floor at {h}':<22}{unc['seconds'] * 1e3:.1f} ms at "
+          f"{unc['uncached_tokens']:,} uncached tokens   "
+          f"({unc['share_of_target']:.0%} of target)")
+    service = point["service"]
+    if service is None:
+        print(f"  {f'seats at {h}':<22}not derivable: no interference fit on this "
+              f"card (docs/SLO.md section 6)")
+    else:
+        print(f"  {f'seats at {h}':<22}{service['seats_at_hit_rate']:.1f} by prefill "
+              f"interference -> ship {service['seats_shipped']}"
+              + ("" if service["bound_by"] == "interference"
+                 else ", capped by capacity")
+              + f"   fit: {service['fit']['provenance']}")
+        if service["note"]:
+            print(f"  {'':<22}{service['note']}")
+        if service["seats_shipped"] > 0:
+            print(f"  {'service':<22}{service['aggregate_tokens_per_sec']:,.0f} tok/s, "
+                  f"${service['cost_per_1m_output_tokens']:.3f} / 1M tokens at "
+                  f"{service['seats_shipped']} seats")
+        else:
+            print(f"  {'service':<22}no seat meets the target once interference "
+                  f"is priced in")
+    print()
+
+
+def main(argv=None) -> int:
+    """No arguments prints the ten tables; --what-if prints one chosen point.
+
+    The default is byte-identical to what this file printed before the flags
+    existed, deliberately: step 0 of every runsheet opens these tables beside a
+    pod, and bench/tests/test_roofline.py asserts their figures. A flag that
+    moved them would be a flag that edits docs/SLO.md.
+    """
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--what-if", action="store_true",
+                        help="print one operating point instead of the ten "
+                             "tables, from the parameters below")
+    parser.add_argument("--accelerator", choices=sorted(ACCELERATORS),
+                        help="which card, and which coefficients with it "
+                             "(default l40s-run1, the only entry backed by a "
+                             "measurement)")
+    parser.add_argument("--model", choices=sorted(MODELS),
+                        help="which architecture to price (default qwen3-8b, "
+                             "the one this stack serves and the only one any "
+                             "run here has measured)")
+    parser.add_argument("--context-len", type=int,
+                        help="tokens of KV reserved per seat: prompt plus "
+                             "the output it will grow (default 4200, this "
+                             "repository's own point -- 4000 in, 200 out)")
+    parser.add_argument("--prompt-tokens", type=int,
+                        help="prompt length the TTFT floor is taken at "
+                             "(default 4000)")
+    parser.add_argument("--tpot-ms", type=float,
+                        help="TPOT target in milliseconds (default 50)")
+    parser.add_argument("--ttft-ms", type=float,
+                        help="TTFT target in milliseconds (default 300)")
+    parser.add_argument("--gpu-memory-utilization", type=float,
+                        help="the vLLM knob, as served (default 0.90)")
+    parser.add_argument("--kv-dtype-bytes", type=int, choices=(1, 2),
+                        help="2 for a BF16 KV cache, 1 for FP8 (default 2)")
+    parser.add_argument("--hourly-rate", type=float,
+                        help="$/h for the cost line; a contract figure, not "
+                             "physics (default: the card's rate in this file)")
+    parser.add_argument("--hit-rate", type=float,
+                        help="prefix cache hit rate h, 0..1: the share of the "
+                             "prompt the cache serves. Moves the uncached TTFT "
+                             "floor and the service seat count, and nothing "
+                             "else -- a decode step reads the same bytes "
+                             "whatever h is (default 0)")
+    parser.add_argument("--json", action="store_true",
+                        help="print the operating point as JSON instead of "
+                             "text -- the same dict the site's golden grid is "
+                             "rows of")
+    args = parser.parse_args(argv)
+
+    # A parameter without --what-if would silently print the ten tables it
+    # cannot touch, which is the one outcome worth an error rather than a shrug.
+    # --json is a store_true, so it is False rather than None when absent and
+    # has to be looked at on its own.
+    point = {k: v for k, v in vars(args).items()
+             if k not in ("what_if", "json") and v is not None}
+    if (point or args.json) and not args.what_if:
+        flags = [f"--{k.replace('_', '-')}" for k in point] + \
+                (["--json"] if args.json else [])
+        parser.error(f"{', '.join(flags)} "
+                     f"{'mean' if len(flags) > 1 else 'means'} nothing without "
+                     "--what-if: the ten tables are fixed operating points "
+                     "and take no parameters")
+
+    if args.what_if:
+        kwargs = {k: v for k, v in point.items()
+                  if k not in ("tpot_ms", "ttft_ms")}
+        if args.tpot_ms is not None:
+            kwargs["tpot_target"] = args.tpot_ms / 1e3
+        if args.ttft_ms is not None:
+            kwargs["ttft_target"] = args.ttft_ms / 1e3
+        if args.json:
+            # allow_nan=False: an inf that slipped past _finite() is a bug, and
+            # a crash here is better than a file JSON.parse rejects later.
+            print(json.dumps(what_if_point(**kwargs), indent=2, sort_keys=True,
+                             allow_nan=False))
+        else:
+            what_if(**kwargs)
+        return 0
+
+    sizes()
+    for table in (decode_table, latency_limit_table, shipping_table,
+                  prefill_table, cost_table, sweep_concurrency_table,
+                  sweep_length_table, prefix_cache_table,
+                  mi300x_sweep_table):
+        table()
+    sweep_length_table(MI300X, batch=1, number=10)
+    print()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

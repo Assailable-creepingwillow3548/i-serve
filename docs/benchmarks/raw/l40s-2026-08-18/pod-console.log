@@ -1,0 +1,427 @@
+Tue Aug 18 2026 14:45:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:21 [api_utils.py:345]
+Tue Aug 18 2026 14:45:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:21 [api_utils.py:345]        █     █     █▄   ▄█
+Tue Aug 18 2026 14:45:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:21 [api_utils.py:345]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.27.1
+Tue Aug 18 2026 14:45:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:21 [api_utils.py:345]   █▄█▀ █     █     █     █  model   Qwen/Qwen3-8B
+Tue Aug 18 2026 14:45:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:21 [api_utils.py:345]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+Tue Aug 18 2026 14:45:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:21 [api_utils.py:345]
+Tue Aug 18 2026 14:45:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:21 [api_utils.py:273] non-default args: {'model_tag': 'Qwen/Qwen3-8B', 'host': '127.0.0.1', 'model': 'Qwen/Qwen3-8B', 'max_model_len': 9000, 'gpu_memory_utilization': 0.9, 'enable_prefix_caching': False}
+Tue Aug 18 2026 14:45:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Tue Aug 18 2026 14:45:36 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:36 [model.py:645] Resolved architecture: Qwen3ForCausalLM
+Tue Aug 18 2026 14:45:36 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:36 [model.py:1883] Using max model len 9000
+Tue Aug 18 2026 14:45:36 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:45:36 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+Tue Aug 18 2026 14:45:47 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:45:47 [core.py:121] Initializing a V1 LLM engine (v0.27.1) with config: model='Qwen/Qwen3-8B', speculative_config=None, tokenizer='Qwen/Qwen3-8B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=9000, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=Qwen/Qwen3-8B, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [2048], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+Tue Aug 18 2026 14:45:50 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:45:50 [parallel_state.py:1640] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.0.2:48995 backend=nccl
+Tue Aug 18 2026 14:45:50 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:45:50 [parallel_state.py:1977] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+Tue Aug 18 2026 14:45:50 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:45:50 [gpu_worker.py:385] Using V2 Model Runner
+Tue Aug 18 2026 14:45:51 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:45:51 [model_runner.py:308] Loading model from scratch...
+Tue Aug 18 2026 14:45:51 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:45:51 [cuda.py:482] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+Tue Aug 18 2026 14:45:51 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:45:51 [flash_attn.py:789] Using FlashAttention version 2
+Tue Aug 18 2026 14:45:51 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Tue Aug 18 2026 14:46:12 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:12 [weight_utils.py:530] Time spent downloading weights for Qwen/Qwen3-8B: 21.055797 seconds
+Tue Aug 18 2026 14:46:12 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:12 [weight_utils.py:867] Filesystem type for checkpoints: FUSE. Checkpoint size: 15.26 GiB. Available RAM: 39.56 GiB.
+Tue Aug 18 2026 14:46:12 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:12 [weight_utils.py:890] Auto-prefetch is disabled because the filesystem (FUSE) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.
+Tue Aug 18 2026 14:46:12 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) 
+Loading safetensors checkpoint shards:   0% Completed | 0/5 [00:00<?, ?it/s]
+Tue Aug 18 2026 14:46:13 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) 
+Loading safetensors checkpoint shards:  20% Completed | 1/5 [00:00<00:02,  1.73it/s]
+Tue Aug 18 2026 14:46:14 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) 
+Loading safetensors checkpoint shards:  40% Completed | 2/5 [00:01<00:02,  1.45it/s]
+Tue Aug 18 2026 14:46:15 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) 
+Loading safetensors checkpoint shards:  60% Completed | 3/5 [00:02<00:01,  1.38it/s]
+Tue Aug 18 2026 14:46:15 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) 
+Loading safetensors checkpoint shards:  80% Completed | 4/5 [00:02<00:00,  1.46it/s]
+Tue Aug 18 2026 14:46:16 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) 
+Loading safetensors checkpoint shards: 100% Completed | 5/5 [00:03<00:00,  1.82it/s]
+Tue Aug 18 2026 14:46:16 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) 
+Loading safetensors checkpoint shards: 100% Completed | 5/5 [00:03<00:00,  1.64it/s]
+Tue Aug 18 2026 14:46:16 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531)
+Tue Aug 18 2026 14:46:16 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:16 [default_loader.py:430] Loading weights took 3.11 seconds
+Tue Aug 18 2026 14:46:16 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:16 [model_runner.py:329] Model loading took 15.27 GiB and 25.880475 seconds
+Tue Aug 18 2026 14:46:16 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:16 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.
+Tue Aug 18 2026 14:46:23 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:23 [backends.py:1094] Using cache directory: /workspace/.vllm/torch_compile_cache/409dd97589/rank_0_0/backbone for vLLM's torch.compile
+Tue Aug 18 2026 14:46:23 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:23 [backends.py:1155] Dynamo bytecode transform time: 6.10 s
+Tue Aug 18 2026 14:46:48 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:48 [backends.py:393] Compiling a graph for compile range (1, 2048) takes 25.04 s
+Tue Aug 18 2026 14:46:52 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:52 [backends.py:920] collected artifacts: 37 entries, 3 artifacts, 6356488 bytes total
+Tue Aug 18 2026 14:46:52 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:52 [decorators.py:708] saved AOT compiled function to /workspace/.vllm/torch_compile_cache/torch_aot_compile/57a50eae1d8d81a1e7de1a89729b7e737908f77120c5b36499128be533b6f18f/rank_0_0/model
+Tue Aug 18 2026 14:46:52 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:52 [monitor.py:53] torch.compile took 35.23 s in total
+Tue Aug 18 2026 14:46:53 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:53 [monitor.py:81] Initial profiling/warmup run took 0.11 s
+Tue Aug 18 2026 14:46:54 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:54 [gpu_worker.py:563] Available KV cache memory: 23.23 GiB
+Tue Aug 18 2026 14:46:54 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:54 [kv_cache_utils.py:2235] GPU KV cache size: 168,985 tokens
+Tue Aug 18 2026 14:46:54 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:46:54 [kv_cache_utils.py:2236] Maximum concurrency for 9,000 tokens per request: 18.78x
+Tue Aug 18 2026 14:46:59 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) 
+Capturing CUDA graphs (PIECEWISE):   0%|          | 0/51 [00:00<?, ?it/s]
+Capturing CUDA graphs (PIECEWISE):   4%|▍         | 2/51 [00:00<00:04, 11.05it/s]
+Capturing CUDA graphs (PIECEWISE):   8%|▊         | 4/51 [00:00<00:04, 10.76it/s]
+Capturing CUDA graphs (PIECEWISE):  12%|█▏        | 6/51 [00:00<00:03, 11.31it/s]
+Capturing CUDA graphs (PIECEWISE):  16%|█▌        | 8/51 [00:00<00:03, 11.53it/s]
+Capturing CUDA graphs (PIECEWISE):  20%|█▉        | 10/51 [00:00<00:03, 10.99it/s]
+Capturing CUDA graphs (PIECEWISE):  24%|██▎       | 12/51 [00:01<00:03, 11.35it/s]
+Capturing CUDA graphs (PIECEWISE):  27%|██▋       | 14/51 [00:01<00:03, 11.59it/s]
+Capturing CUDA graphs (PIECEWISE):  31%|███▏      | 16/51 [00:01<00:03, 10.78it/s]
+Capturing CUDA graphs (PIECEWISE):  35%|███▌      | 18/51 [00:01<00:02, 11.17it/s]
+Capturing CUDA graphs (PIECEWISE):  39%|███▉      | 20/51 [00:01<00:02, 11.92it/s]
+Capturing CUDA graphs (PIECEWISE):  43%|████▎     | 22/51 [00:01<00:02, 12.48it/s]
+Capturing CUDA graphs (PIECEWISE):  47%|████▋     | 24/51 [00:02<00:02, 12.07it/s]
+Capturing CUDA graphs (PIECEWISE):  51%|█████     | 26/51 [00:02<00:01, 12.64it/s]
+Capturing CUDA graphs (PIECEWISE):  55%|█████▍    | 28/51 [00:02<00:01, 13.02it/s]
+Capturing CUDA graphs (PIECEWISE):  59%|█████▉    | 30/51 [00:02<00:01, 11.62it/s]
+Capturing CUDA graphs (PIECEWISE):  63%|██████▎   | 32/51 [00:02<00:01, 11.72it/s]
+Capturing CUDA graphs (PIECEWISE):  67%|██████▋   | 34/51 [00:02<00:01, 12.11it/s]
+Capturing CUDA graphs (PIECEWISE):  71%|███████   | 36/51 [00:03<00:01, 12.75it/s]
+Capturing CUDA graphs (PIECEWISE):  75%|███████▍  | 38/51 [00:03<00:01, 11.84it/s]
+Capturing CUDA graphs (PIECEWISE):  78%|███████▊  | 40/51 [00:03<00:00, 12.56it/s]
+Capturing CUDA graphs (PIECEWISE):  82%|████████▏ | 42/51 [00:03<00:00, 13.12it/s]
+Capturing CUDA graphs (PIECEWISE):  86%|████████▋ | 44/51 [00:03<00:00, 13.60it/s]
+Capturing CUDA graphs (PIECEWISE):  90%|█████████ | 46/51 [00:03<00:00, 12.81it/s]
+Capturing CUDA graphs (PIECEWISE):  94%|█████████▍| 48/51 [00:03<00:00, 13.43it/s]
+Capturing CUDA graphs (PIECEWISE):  98%|█████████▊| 50/51 [00:04<00:00, 13.99it/s]
+Capturing CUDA graphs (PIECEWISE): 100%|██████████| 51/51 [00:04<00:00, 12.28it/s]
+Tue Aug 18 2026 14:47:01 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) 
+Capturing CUDA graphs (FULL):   0%|          | 0/35 [00:00<?, ?it/s]
+Capturing CUDA graphs (FULL):   6%|▌         | 2/35 [00:00<00:01, 19.26it/s]
+Capturing CUDA graphs (FULL):  14%|█▍        | 5/35 [00:00<00:01, 21.05it/s]
+Capturing CUDA graphs (FULL):  23%|██▎       | 8/35 [00:00<00:01, 21.59it/s]
+Capturing CUDA graphs (FULL):  31%|███▏      | 11/35 [00:00<00:01, 21.15it/s]
+Capturing CUDA graphs (FULL):  40%|████      | 14/35 [00:00<00:01, 20.83it/s]
+Capturing CUDA graphs (FULL):  49%|████▊     | 17/35 [00:00<00:00, 21.14it/s]
+Capturing CUDA graphs (FULL):  57%|█████▋    | 20/35 [00:00<00:00, 21.61it/s]
+Capturing CUDA graphs (FULL):  66%|██████▌   | 23/35 [00:01<00:00, 22.05it/s]
+Capturing CUDA graphs (FULL):  74%|███████▍  | 26/35 [00:01<00:00, 21.76it/s]
+Capturing CUDA graphs (FULL):  83%|████████▎ | 29/35 [00:01<00:00, 22.04it/s]
+Capturing CUDA graphs (FULL):  91%|█████████▏| 32/35 [00:01<00:00, 22.67it/s]
+Capturing CUDA graphs (FULL): 100%|██████████| 35/35 [00:01<00:00, 23.49it/s]
+Capturing CUDA graphs (FULL): 100%|██████████| 35/35 [00:01<00:00, 22.08it/s]
+Tue Aug 18 2026 14:47:01 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:47:01 [model_runner.py:791] Graph capturing finished in 6 secs, took 0.57 GiB
+Tue Aug 18 2026 14:47:01 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:47:01 [gpu_worker.py:789] Free memory on device (43.97/44.39 GiB) on startup. Desired GPU memory utilization is (0.9, 39.95 GiB). Actual usage is 15.54 GiB for consumed memory (weights + non-torch), 1.18 GiB for peak activation, and 0.57 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=24169583719` (22.51 GiB) to fit into requested memory, or `--kv-cache-memory=28480876032` (26.52 GiB) to fully utilize gpu memory. Current kv cache memory in use is 23.23 GiB.
+Tue Aug 18 2026 14:47:05 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:47:05 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+Tue Aug 18 2026 14:47:06 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:47:06 [core.py:348] init engine (profile, create kv cache, warmup model) took 49.56 s (compilation: 35.23 s)
+Tue Aug 18 2026 14:47:07 GMT+0300 (Eastern European Summer Time) (EngineCore pid=531) INFO 08-18 11:47:07 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+Tue Aug 18 2026 14:47:07 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:07 [api_server.py:678] Supported tasks: ['generate']
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [hf.py:540] Detected the chat template content format to be 'string'. You can set `--chat-template-content-format` to override this.
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) WARNING 08-18 11:47:09 [model.py:1637] Default vLLM sampling parameters have been overridden by the model's `generation_config.json`: `{'temperature': 0.6, 'top_k': 20, 'top_p': 0.95}`. If this is not intended, please relaunch vLLM instance with `--generation-config vllm`.
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [api_server.py:682] Starting vLLM server on http://127.0.0.1:8000
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:37] Available routes are:
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /openapi.json, Methods: HEAD, GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /docs, Methods: HEAD, GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /docs/oauth2-redirect, Methods: HEAD, GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /redoc, Methods: HEAD, GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /load, Methods: GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /version, Methods: GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /health, Methods: GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /metrics, Methods: GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /tokenize, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /detokenize, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/models, Methods: GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /ping, Methods: GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /ping, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /invocations, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/chat/completions, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/chat/completions/batch, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/responses, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/responses/{response_id}, Methods: GET
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/responses/{response_id}/cancel, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/completions, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/messages, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/messages/count_tokens, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /generative_scoring, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /scale_elastic_ep, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /is_scaling_elastic_ep, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/chat/completions/render, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/completions/render, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/chat/completions/derender, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /v1/completions/derender, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:46] Route: /inference/v1/generate, Methods: POST
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:09 [launcher.py:99] API server: waiting for HTTP server to start
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     Started server process [50]
+Tue Aug 18 2026 14:47:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     Waiting for application startup.
+Tue Aug 18 2026 14:47:10 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     Application startup complete.
+Tue Aug 18 2026 14:47:10 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 11:47:10 [launcher.py:105] API server: HTTP server started
+Tue Aug 18 2026 15:04:11 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:58912 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:05:17 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:49242 - "GET /v1/models HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:06:25 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:41672 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:06:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:06:30 [loggers.py:310] Engine 000: Avg prompt throughput: 0.5 tokens/s, Avg generation throughput: 1.6 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:06:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:06:40 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:10:49 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54144 - "GET /server_info HTTP/1.1" 404 Not Found
+Tue Aug 18 2026 15:18:36 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:58118 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:18:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45766 - "POST /tokenize HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:18:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:18:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:18:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:18:55 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:19:00 [loggers.py:310] Engine 000: Avg prompt throughput: 799.9 tokens/s, Avg generation throughput: 39.5 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 2.5%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:19:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:05 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:10 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:10 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:19:10 [loggers.py:310] Engine 000: Avg prompt throughput: 799.9 tokens/s, Avg generation throughput: 40.5 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:19:15 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:19:20 [loggers.py:310] Engine 000: Avg prompt throughput: 1200.0 tokens/s, Avg generation throughput: 40.4 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 2.4%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:19:24 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:29 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:19:30 [loggers.py:310] Engine 000: Avg prompt throughput: 800.0 tokens/s, Avg generation throughput: 41.2 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 2.4%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:19:34 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:39 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:19:40 [loggers.py:310] Engine 000: Avg prompt throughput: 799.9 tokens/s, Avg generation throughput: 41.3 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 2.4%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:19:44 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:49 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:19:50 [loggers.py:310] Engine 000: Avg prompt throughput: 800.0 tokens/s, Avg generation throughput: 41.2 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 2.4%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:19:53 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:19:58 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:20:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:20:00 [loggers.py:310] Engine 000: Avg prompt throughput: 800.0 tokens/s, Avg generation throughput: 41.2 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 2.4%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:20:03 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:20:08 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:20:10 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:20:10 [loggers.py:310] Engine 000: Avg prompt throughput: 800.0 tokens/s, Avg generation throughput: 41.2 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 2.4%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:20:13 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:20:18 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:20:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:20:20 [loggers.py:310] Engine 000: Avg prompt throughput: 799.9 tokens/s, Avg generation throughput: 41.1 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 2.4%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:20:23 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:20:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:20:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:45782 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:20:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:57638 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:20:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:20:30 [loggers.py:310] Engine 000: Avg prompt throughput: 400.0 tokens/s, Avg generation throughput: 32.4 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:20:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:20:40 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:27:05 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:59198 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:18 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55508 - "POST /tokenize HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55512 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55512 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55512 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55522 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55532 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55536 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55548 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55564 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55580 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55592 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:27:20 [loggers.py:310] Engine 000: Avg prompt throughput: 1200.0 tokens/s, Avg generation throughput: 0.9 tokens/s, Running: 4 reqs, Waiting: 4 reqs, GPU KV cache usage: 8.5%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:27:27 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55512 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:27 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55522 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:27 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55532 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55536 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55548 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55564 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:29 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55580 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:29 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55592 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:27:30 [loggers.py:310] Engine 000: Avg prompt throughput: 5199.5 tokens/s, Avg generation throughput: 169.5 tokens/s, Running: 8 reqs, Waiting: 0 reqs, GPU KV cache usage: 19.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:27:35 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55512 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:35 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55522 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:35 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55532 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:36 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55536 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:36 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55548 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:36 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55564 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:37 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55580 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:37 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55592 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:27:40 [loggers.py:310] Engine 000: Avg prompt throughput: 3199.8 tokens/s, Avg generation throughput: 208.0 tokens/s, Running: 8 reqs, Waiting: 0 reqs, GPU KV cache usage: 19.3%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:27:43 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55512 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:44 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55522 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:44 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55532 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:44 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55536 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:45 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55548 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:45 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55564 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:45 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55580 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:46 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55592 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:27:50 [loggers.py:310] Engine 000: Avg prompt throughput: 3199.5 tokens/s, Avg generation throughput: 206.4 tokens/s, Running: 8 reqs, Waiting: 0 reqs, GPU KV cache usage: 19.6%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:27:52 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55512 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:52 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55522 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:27:52 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:53112 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:28:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:28:00 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 55.2 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:28:10 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:28:10 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:51:16 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55318 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:51:16 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55332 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:51:16 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55348 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:51:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:51:20 [loggers.py:310] Engine 000: Avg prompt throughput: 1599.8 tokens/s, Avg generation throughput: 143.6 tokens/s, Running: 4 reqs, Waiting: 0 reqs, GPU KV cache usage: 5.1%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:51:22 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55306 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:51:22 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55318 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:51:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:51:30 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 24.6 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:51:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:51:40 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:53:14 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36084 - "POST /tokenize HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:15 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36094 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:15 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36094 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:15 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36094 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:15 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36098 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:15 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36102 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:15 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36116 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:53:20 [loggers.py:310] Engine 000: Avg prompt throughput: 1600.0 tokens/s, Avg generation throughput: 60.8 tokens/s, Running: 4 reqs, Waiting: 0 reqs, GPU KV cache usage: 9.8%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:53:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36094 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36098 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:21 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36102 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:22 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36116 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36094 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36098 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36102 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36116 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:53:30 [loggers.py:310] Engine 000: Avg prompt throughput: 3199.6 tokens/s, Avg generation throughput: 116.0 tokens/s, Running: 4 reqs, Waiting: 0 reqs, GPU KV cache usage: 9.6%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:53:34 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36094 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:34 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36098 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:34 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36102 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:35 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36116 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:53:40 [loggers.py:310] Engine 000: Avg prompt throughput: 1599.9 tokens/s, Avg generation throughput: 133.6 tokens/s, Running: 4 reqs, Waiting: 0 reqs, GPU KV cache usage: 9.9%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:53:41 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36094 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:41 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36098 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:41 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36102 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:41 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36116 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:47 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36094 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:47 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:36098 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:53:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:53:50 [loggers.py:310] Engine 000: Avg prompt throughput: 1599.9 tokens/s, Avg generation throughput: 89.6 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:54:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:54:00 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:54:32 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37992 - "POST /tokenize HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:33 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37996 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:33 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37996 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:33 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37996 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:33 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37998 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:33 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38012 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:33 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38022 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:54:40 [loggers.py:310] Engine 000: Avg prompt throughput: 3199.6 tokens/s, Avg generation throughput: 61.6 tokens/s, Running: 4 reqs, Waiting: 0 reqs, GPU KV cache usage: 19.3%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:54:41 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37996 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:41 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37998 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:42 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38012 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:43 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38022 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37996 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37998 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:54:50 [loggers.py:310] Engine 000: Avg prompt throughput: 3199.9 tokens/s, Avg generation throughput: 97.2 tokens/s, Running: 3 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.1%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:54:51 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38012 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:51 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38022 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:58 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37996 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:58 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37998 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:54:59 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38012 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:55:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38022 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:55:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:55:00 [loggers.py:310] Engine 000: Avg prompt throughput: 4800.1 tokens/s, Avg generation throughput: 82.0 tokens/s, Running: 3 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.1%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:55:07 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37996 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:55:07 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37998 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:55:08 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38012 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:55:08 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:38022 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:55:10 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:55:10 [loggers.py:310] Engine 000: Avg prompt throughput: 4799.8 tokens/s, Avg generation throughput: 86.0 tokens/s, Running: 4 reqs, Waiting: 0 reqs, GPU KV cache usage: 19.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:55:16 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37996 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:55:16 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37998 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:55:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:55:20 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 73.2 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:55:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:55:30 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37074 - "POST /tokenize HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37084 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37084 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37084 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37096 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37104 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37106 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37112 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37122 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37134 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37146 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37158 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37168 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37184 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37192 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37202 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:59:30 [loggers.py:310] Engine 000: Avg prompt throughput: 1999.9 tokens/s, Avg generation throughput: 3.0 tokens/s, Running: 7 reqs, Waiting: 6 reqs, GPU KV cache usage: 14.6%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:59:38 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37084 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:38 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37096 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:39 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37104 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:39 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37106 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:39 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37112 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37122 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:59:40 [loggers.py:310] Engine 000: Avg prompt throughput: 4799.5 tokens/s, Avg generation throughput: 253.0 tokens/s, Running: 12 reqs, Waiting: 0 reqs, GPU KV cache usage: 28.1%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:59:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37134 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:41 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37146 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:41 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37158 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:41 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37168 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:42 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37184 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:42 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37192 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:42 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37202 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:49 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37084 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:49 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37096 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:49 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37104 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37106 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37112 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 12:59:50 [loggers.py:310] Engine 000: Avg prompt throughput: 4399.9 tokens/s, Avg generation throughput: 257.4 tokens/s, Running: 12 reqs, Waiting: 0 reqs, GPU KV cache usage: 27.1%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 15:59:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37122 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:51 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37134 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:51 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37146 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:51 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37158 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:52 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37168 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:52 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37184 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:52 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37192 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:53 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37202 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 15:59:59 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37084 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37096 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37104 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:00:00 [loggers.py:310] Engine 000: Avg prompt throughput: 4799.8 tokens/s, Avg generation throughput: 256.7 tokens/s, Running: 12 reqs, Waiting: 0 reqs, GPU KV cache usage: 28.4%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 16:00:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37106 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37112 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:01 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37122 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:01 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37134 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:01 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37146 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:02 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37158 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:02 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37168 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:03 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37184 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:03 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37192 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:03 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37202 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:10 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:00:10 [loggers.py:310] Engine 000: Avg prompt throughput: 4799.2 tokens/s, Avg generation throughput: 251.7 tokens/s, Running: 13 reqs, Waiting: 0 reqs, GPU KV cache usage: 32.2%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 16:00:11 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37084 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:11 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:37096 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:00:20 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 18.2 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 16:00:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:00:30 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54882 - "POST /tokenize HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54894 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54894 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54894 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54906 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54920 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54934 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54946 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54954 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54958 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54974 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54980 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54994 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55006 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55014 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:54 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55030 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:00:55 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55040 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:00 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:01:00 [loggers.py:310] Engine 000: Avg prompt throughput: 5599.4 tokens/s, Avg generation throughput: 56.0 tokens/s, Running: 14 reqs, Waiting: 0 reqs, GPU KV cache usage: 33.5%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 16:01:05 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54894 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:05 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54906 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:05 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54920 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:06 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54934 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:06 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54946 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:07 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54954 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:07 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54958 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:07 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54974 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:08 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54980 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:08 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54994 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:08 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55006 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55014 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55030 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:09 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55040 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:10 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:01:10 [loggers.py:310] Engine 000: Avg prompt throughput: 5198.8 tokens/s, Avg generation throughput: 242.1 tokens/s, Running: 14 reqs, Waiting: 0 reqs, GPU KV cache usage: 33.3%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 16:01:16 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54894 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:16 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54906 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:16 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54920 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:17 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54934 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:17 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54946 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:18 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54954 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:18 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54958 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:18 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54974 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54980 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54994 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:19 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55006 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55014 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:01:20 [loggers.py:310] Engine 000: Avg prompt throughput: 4400.0 tokens/s, Avg generation throughput: 272.4 tokens/s, Running: 13 reqs, Waiting: 0 reqs, GPU KV cache usage: 31.1%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 16:01:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55030 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:20 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55040 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:27 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54894 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:27 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54906 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:27 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54920 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54934 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:28 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54946 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:29 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54954 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:29 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54958 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:29 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54974 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54980 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:01:30 [loggers.py:310] Engine 000: Avg prompt throughput: 4399.7 tokens/s, Avg generation throughput: 273.0 tokens/s, Running: 13 reqs, Waiting: 0 reqs, GPU KV cache usage: 29.2%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 16:01:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54994 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:30 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55006 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:31 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55014 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:31 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55030 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:31 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:55040 - "POST /v1/completions HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:39 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54894 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:39 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO:     127.0.0.1:54906 - "GET /metrics HTTP/1.1" 200 OK
+Tue Aug 18 2026 16:01:40 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:01:40 [loggers.py:310] Engine 000: Avg prompt throughput: 2799.9 tokens/s, Avg generation throughput: 276.4 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+Tue Aug 18 2026 16:01:50 GMT+0300 (Eastern European Summer Time) (APIServer pid=50) INFO 08-18 13:01:50 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%

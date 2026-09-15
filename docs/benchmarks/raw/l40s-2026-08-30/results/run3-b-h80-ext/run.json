@@ -1,0 +1,45 @@
+{
+  "accelerator": "NVIDIA L40S (run 1 coefficients)",
+  "argv": [
+    "bench/harness.py",
+    "--scenario",
+    "goodput-cached-extended",
+    "--out",
+    "results/run3-b-h80-ext",
+    "--startup-log",
+    "/workspace/run3/serve-cache-on.log",
+    "--sample-gauges",
+    "1.0"
+  ],
+  "endpoint": {
+    "host": "127.0.0.1",
+    "model": "Qwen/Qwen3-8B",
+    "port": 8000
+  },
+  "finished": "2026-08-30T10:58:26+0000",
+  "levels": [
+    "rate-9-h80",
+    "rate-11-h80",
+    "rate-13-h80"
+  ],
+  "pool_gate": "KV pool 176,227 tokens against reference 168,985 (1.043x, gate +-5%): PASS",
+  "scenario": "goodput-cached-extended",
+  "seat_verdict": "seats: not measured -- this scenario has no closed-loop level",
+  "slo": {
+    "tpot_ms": 50.0,
+    "ttft_ms": 300.0
+  },
+  "started": "2026-08-30T10:52:35+0000",
+  "startup_log": {
+    "attention_backend": "FLASH_ATTN",
+    "enable_prefix_caching": "True",
+    "kv_cache_dtype": "auto",
+    "kv_cache_gib": 24.22,
+    "kv_cache_tokens": 176227.0,
+    "max_concurrency": 19.58
+  },
+  "startup_log_unread": [
+    "max_num_batched_tokens",
+    "max_num_seqs"
+  ]
+}

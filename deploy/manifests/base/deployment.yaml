@@ -1,0 +1,145 @@
+# vLLM as a Deployment. Written for the real image on a real GPU node; the
+# overlays/kind variant swaps the container out for a stub so this shape can be
+# debugged for free. Flags mirror the ones run 3 measured
+# (docs/benchmarks/runsheets/l40s-run-3.md), so the manifest and the benchmarks
+# describe the same server.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  labels:
+    app.kubernetes.io/name: vllm
+spec:
+  # No `replicas` field, deliberately. Once a ScaledObject exists (deploy/keda/)
+  # the HPA owns this number, and a manifest that still declares it resets the
+  # fleet to its literal value on every apply — a scale-in nobody asked for,
+  # arriving at deploy time. Absent, the field keeps whatever the autoscaler set.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm
+
+  strategy:
+    # Recreate, not RollingUpdate, and this is a GPU-specific choice: a surge
+    # Pod needs a free accelerator, and on a fixed node pool there is none until
+    # the old Pod exits. A rolling update would deadlock on Pending forever.
+    # Zero-downtime rollout is a canary with real spare capacity, not a strategy
+    # field — see docs/runbook.md.
+    type: Recreate
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vllm
+    spec:
+      # Decode steps in flight when SIGTERM lands still have to finish. vLLM
+      # stops admitting and drains; 120 s covers a full max-model-len generation
+      # at the measured step time with room to spare.
+      terminationGracePeriodSeconds: 120
+
+      containers:
+        - name: vllm
+          # Pinned to the tag every measurement in docs/benchmarks/ was taken
+          # on. `latest` would silently change the engine under the numbers.
+          image: vllm/vllm-openai:v0.27.1
+
+          # `/metrics` needs no flag, but it is switched off by
+          # --disable-log-stats: the scaler's input disappears with the log
+          # noise, which is a quiet way to lose autoscaling.
+          args:
+            - --model
+            - Qwen/Qwen3-8B
+            - --gpu-memory-utilization
+            - "0.90"
+            # 9 000 is the one constant in this repository that carries no
+            # derivation: its origin is unrecovered, and docs/SLO.md section 10
+            # says so rather than inventing one. The edge timeout in
+            # ingress.yaml is computed from it, so the two move together.
+            - --max-model-len
+            - "9000"
+
+          ports:
+            # Named, because the Service refers to it by name: the number can
+            # move without touching service.yaml.
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+
+          env:
+            - name: HF_HOME
+              value: /cache/hf
+            # The volume is populated by the fetch-weights Job and mounted
+            # read-only, so any attempt to reach the Hub at start is a bug
+            # either way. Offline turns it into an immediate, legible failure
+            # instead of a pod that hangs on a network call while the startup
+            # probe silently burns its ten minutes.
+            - name: HF_HUB_OFFLINE
+              value: "1"
+
+          resources:
+            requests:
+              cpu: "4"
+              memory: 16Gi
+            limits:
+              # One accelerator per Pod. GPUs are declared in limits only —
+              # Kubernetes copies the value into requests and forbids
+              # overcommit, so a GPU is never shared between Pods.
+              # MI300X is the same line with `amd.com/gpu` and a rocm/vllm
+              # image: two fields, one overlay.
+              nvidia.com/gpu: "1"
+              memory: 32Gi
+
+          # Three probes with three different jobs, and conflating them is the
+          # classic way to break a model server:
+          #   startup   — weights take minutes to load. Until this passes the
+          #               other two are suspended, so a slow load is not a
+          #               restart loop. 60 x 10 s = 10 minutes of patience.
+          #   readiness — decides whether the Service sends traffic here.
+          #   liveness  — decides whether to restart the container. Deliberately
+          #               slower to fire than readiness: a wedged engine should
+          #               first be taken out of rotation, and only then killed.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 6
+
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: weights
+              mountPath: /cache/hf
+              # No replica may mutate weights another replica is reading. If the
+              # engine turns out to need a writable lock directory here, the fix
+              # is an emptyDir mounted over /cache/hf/.locks, not a writable
+              # share — first GPU run verifies this.
+              readOnly: true
+
+      volumes:
+        # The container default of 64 MB is not enough: vLLM's worker processes
+        # talk over shared memory, and the failure is an opaque crash at load
+        # time rather than an out-of-space error.
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi
+        # One shared copy, populated once by the fetch-weights Job. Why RWO and
+        # not a network share, and what changes on a multi-node pool: pvc.yaml.
+        - name: weights
+          persistentVolumeClaim:
+            claimName: weights
+            readOnly: true

@@ -1,0 +1,65 @@
+# Alerting rules, and the one decision in them is which instrument each rule
+# reads. The objective is one line of docs/SLO.md §2 — interactive TTFT p99 at
+# or under 300 ms — and it is read here through two instruments, because only
+# one of them exists on kind:
+#
+#   TTFTBudgetBurning      the SLI itself, from vLLM's TTFT histogram. The stub
+#                          exports no histogram on purpose (a zero there would be
+#                          a fabricated measurement), so on kind this rule loads,
+#                          evaluates to an empty vector and never fires. It
+#                          fires first on a card.
+#   QueueBeyondTTFTBudget  the proxy §4 derives: a request that is queued at all
+#                          has already missed the budget. Gauges only, so it
+#                          fires on kind — and it is the one this file was
+#                          watched firing with, 2026-09-03.
+#
+# Which SLI, which window, which burn rate — the derivation is docs/SLO.md §4,
+# "The alert rule". Numbers here are reminders of it, not a second copy.
+groups:
+  - name: slo-ttft
+    rules:
+      - alert: TTFTBudgetBurning
+        # Good events over all events, not histogram_quantile(0.99, ...): the
+        # engine's histogram has bucket edges at 0.25 and 0.5 and none at 0.3,
+        # so a quantile at the target would be a linear interpolation between
+        # two counts — a number the engine never measured. The edge below the
+        # target is read instead, which makes the rule stricter than the SLO,
+        # never looser. Burn rate is the error share over the 1 % the SLO
+        # allows; 14.4 spends 2 % of a 30-day budget in one hour. Both windows
+        # must agree: the hour says the burn is real, the five minutes say it
+        # is still happening.
+        expr: |
+          (
+            1 - sum(rate(vllm:time_to_first_token_seconds_bucket{le="0.25"}[1h]))
+              / sum(rate(vllm:time_to_first_token_seconds_count[1h]))
+          ) / 0.01 > 14.4
+          and
+          (
+            1 - sum(rate(vllm:time_to_first_token_seconds_bucket{le="0.25"}[5m]))
+              / sum(rate(vllm:time_to_first_token_seconds_count[5m]))
+          ) / 0.01 > 14.4
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "TTFT error budget burning at more than 14.4x the sustainable rate"
+          runbook: docs/runbook.md — SLO breach
+
+      - alert: QueueBeyondTTFTBudget
+        # Per pod, not sum(): the scaler already reads the fleet's sum and
+        # answers it with replicas. This reads what the scaler could not clear
+        # — a queue standing on one replica after the control loop has had
+        # time to act means maxReplicaCount, a pool with no node to land on,
+        # or in-flight streams that a new replica cannot take over.
+        expr: max by (pod) (vllm:num_requests_waiting) >= 1
+        # Longer than the scaler's loop on either instrument, so a queue the
+        # scaler is about to clear does not page: scrape (5 s) + HPA sync
+        # (15 s) + pod start, which is seconds for the stub and 69 s cold on
+        # the L40S (docs/benchmarks/l40s-run3.md §6). A weight load slower than
+        # ~100 s would need this raised, and would need a card to say so.
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ $labels.pod }} has held a queue for 2 min; every request in it has missed the TTFT budget (docs/SLO.md §4)"
+          runbook: docs/runbook.md — SLO breach

@@ -1,0 +1,28 @@
+# The version under test — the only file in this directory that changes from
+# one rollout to the next.
+#
+# On a GPU node a model version is an image tag, a `--model` id or a flag set.
+# What any of those changes in docs/SLO.md §3 is two numbers: how many seats
+# the KV pool holds and how long a decode step takes. The stub has exactly
+# those two as fixtures, so a "version" here is a pair of env values — and
+# like every stub fixture they may not be quoted as measurements.
+#
+# The values below are the version the procedure was first run with
+# (deploy/manifests/README.md, "Canary, observed on kind"): one seat, a step
+# fifty times slower than the stable track — a version that cannot hold its
+# share of the traffic, so that the roll-back branch of the runbook is the one
+# exercised.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+spec:
+  template:
+    spec:
+      containers:
+        - name: vllm
+          env:
+            - name: MAX_NUM_SEQS
+              value: "1"
+            - name: SIM_DECODE_MS
+              value: "1000"

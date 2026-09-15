@@ -1,0 +1,46 @@
+# The whole CPU concession, in one patch: same object, same ports, same probes,
+# same Service — a different process behind them. Everything this file touches
+# is a thing a GPU node would have provided.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+spec:
+  template:
+    spec:
+      containers:
+        - name: vllm
+          image: python:3.13-slim
+          command: ["python", "/app/server.py"]
+          # vLLM's flags mean nothing to the stub. An empty list replaces the
+          # base's args rather than merging with them.
+          args: []
+          env:
+            - name: MODEL_NAME
+              value: Qwen/Qwen3-8B
+            # Fixtures, not a configuration of vLLM. The real seat count is
+            # derived per card and target (docs/SLO.md §4) and run 3 used the
+            # engine default of 256; four seats is simply a ceiling a laptop can
+            # push a queue over, and 20 ms/token is a plausible-looking number
+            # that measures nothing. Neither may be quoted anywhere.
+            - name: MAX_NUM_SEQS
+              value: "4"
+            - name: SIM_DECODE_MS
+              value: "20"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              # null deletes the key: there is no device plugin on kind, and an
+              # unsatisfiable resource request leaves the Pod Pending forever.
+              nvidia.com/gpu: null
+              memory: 256Mi
+          volumeMounts:
+            - name: stub
+              mountPath: /app
+              readOnly: true
+      volumes:
+        - name: stub
+          configMap:
+            name: stub

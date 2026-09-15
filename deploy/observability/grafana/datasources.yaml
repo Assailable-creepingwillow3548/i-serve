@@ -1,0 +1,19 @@
+# One datasource: the Prometheus of ../prometheus, by its in-cluster Service
+# name. The uid is fixed so the dashboard JSON can name it -- a provisioned
+# dashboard that refers to a datasource by a generated uid breaks on the first
+# fresh cluster. Nothing here is a secret.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus.monitoring.svc:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      # Matches ../prometheus/prometheus.yml. Grafana uses it to pick a
+      # sensible $__rate_interval: a rate() window shorter than four scrapes
+      # is noise, and this is what keeps the panels' windows above that.
+      timeInterval: 5s

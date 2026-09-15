@@ -1,0 +1,84 @@
+# The edge. One hop in front of the Service, and it owns three numbers that can
+# break an SLO the engine is meeting: how long it will wait for a response, what
+# it does with bytes on the way back, and whether it retries.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vllm
+  labels:
+    app.kubernetes.io/name: vllm
+  annotations:
+    # --- Streaming ---------------------------------------------------------
+    # A guarantee pinned, not a behaviour changed, and the distinction was
+    # measured rather than assumed. `off` is already ingress-nginx's own default
+    # (vanilla nginx defaults to `on`), and switching a fixture Ingress to `on`
+    # moved nothing: 101 SSE events, ~20 ms apart, identical arrival times
+    # through both. The usual claim — that buffering delivers a stream in one
+    # arrival at the end — is not what this directive does. Buffering decouples
+    # the rate nginx reads upstream from the rate it writes to the client; it
+    # does not withhold a body until the response completes.
+    #
+    # It is set anyway, because the thing being protected is an SLO and not a
+    # preference: TTFT is only observable where the edge passes bytes through
+    # synchronously, and a default that holds today is a default a ConfigMap can
+    # flip tomorrow. What `off` costs in exchange is back-pressure — a slow
+    # client is no longer absorbed by nginx, so it holds its seat in the engine
+    # for as long as it reads.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+
+    # --- How long to wait --------------------------------------------------
+    # `proxy-read-timeout` is the gap allowed between two successful reads from
+    # upstream, not a total. A streaming response therefore resets it every
+    # decode step and the 60 s default is ample. A NON-streaming request is the
+    # opposite case: nothing is readable until generation ends, so the timeout
+    # has to cover the whole worst-case generation.
+    #
+    #   --max-model-len 9000 tokens x 50 ms TPOT target  =  450 s
+    #
+    # 480 s, rounded up. This number is coupled to two others and is wrong the
+    # moment either moves: the engine's `--max-model-len` in deployment.yaml,
+    # and the TPOT target in docs/SLO.md. A generation cut at the edge is
+    # indistinguishable at the client from an engine that failed.
+    #
+    # Measured on kind against a 70 s non-streaming completion: 504 at 60.004 s
+    # with the default, 200 at 70.010 s with this value. What that run also
+    # showed — the seat stays occupied after the edge gives up — is the reason
+    # this is a goodput knob and not a comfort setting: see README.md.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "480"
+
+    # --- Whether to retry --------------------------------------------------
+    # Default is `error timeout`, and the `timeout` half is expensive here: a
+    # request that has burned 480 s of accelerator time would be re-sent to a
+    # second replica to burn it again. Retry a connection that never
+    # established — a replica the autoscaler is draining, which is the normal
+    # scale-in path — and never retry compute already spent.
+    #
+    # This only ever applies before the first byte reaches the client: with
+    # buffering off, a streamed response cannot be retried at all once it has
+    # started, whatever this says.
+    nginx.ingress.kubernetes.io/proxy-next-upstream: "error"
+spec:
+  # The field, not the deprecated `kubernetes.io/ingress.class` annotation. An
+  # Ingress with no class is ignored by every controller and reports nothing:
+  # the object is created, the route does not exist.
+  ingressClassName: nginx
+
+  rules:
+    # No `host`. This is a single-tenant inference endpoint behind its own
+    # address, so name-based routing has nothing to separate; a hostname is
+    # added here when a second service shares the edge.
+    - http:
+        paths:
+          # `/v1` only, and the omissions are the decision. `/metrics`
+          # publishes queue depth and model name, and Prometheus reaches it by
+          # per-Pod discovery inside the cluster (deploy/observability/) — it
+          # has no reason to exist at the edge. `/health` answers the kubelet's
+          # probes over the Pod IP, also inside. Routing either would export
+          # internal state to anyone who can reach the address.
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: vllm
+                port:
+                  name: http

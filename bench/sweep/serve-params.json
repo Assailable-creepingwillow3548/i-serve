@@ -1,0 +1,5 @@
+{
+  "bf16-kv":      {"kv_cache_dtype": "auto", "max_num_batched_tokens": 2048},
+  "fp8-kv":       {"kv_cache_dtype": "fp8",  "max_num_batched_tokens": 2048},
+  "bf16-kv-mnbt512": {"kv_cache_dtype": "auto", "max_num_batched_tokens": 512}
+}

@@ -1,0 +1,43 @@
+{
+  "accelerator": "NVIDIA L40S (run 1 coefficients)",
+  "argv": [
+    "bench/harness.py",
+    "--scenario",
+    "overhead",
+    "--out",
+    "results/run3-c-control",
+    "--startup-log",
+    "/workspace/run3/serve-cache-off.log",
+    "--sample-gauges",
+    "1.0"
+  ],
+  "endpoint": {
+    "host": "127.0.0.1",
+    "model": "Qwen/Qwen3-8B",
+    "port": 8000
+  },
+  "finished": "2026-08-30T09:48:34+0000",
+  "levels": [
+    "overhead-c13-h00"
+  ],
+  "pool_gate": "KV pool 168,985 tokens against reference 168,985 (1.000x, gate +-5%): PASS",
+  "scenario": "overhead",
+  "seat_verdict": "seats: none -- TPOT p99 exceeds 50 ms at every concurrency measured",
+  "slo": {
+    "tpot_ms": 50.0,
+    "ttft_ms": 300.0
+  },
+  "started": "2026-08-30T09:47:56+0000",
+  "startup_log": {
+    "attention_backend": "FLASH_ATTN",
+    "enable_prefix_caching": "False",
+    "kv_cache_dtype": "auto",
+    "kv_cache_gib": 23.23,
+    "kv_cache_tokens": 168985.0,
+    "max_concurrency": 18.78
+  },
+  "startup_log_unread": [
+    "max_num_batched_tokens",
+    "max_num_seqs"
+  ]
+}

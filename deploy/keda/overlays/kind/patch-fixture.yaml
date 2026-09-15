@@ -1,0 +1,22 @@
+# Fixtures, and they may not be quoted: the stub's seat count is 4 and its
+# service time is fake, so the threshold derived in docs/SLO.md §4 does not
+# apply to it. What is under test here is the loop — metric to HPA to replica
+# count — not the number.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: vllm
+spec:
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          # 30 s, so scale-in is observable inside a session. The real value is
+          # 300 s and the reason for it does not exist on kind: no weights load.
+          stabilizationWindowSeconds: 30
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc:9090
+        query: sum(vllm:num_requests_waiting{service="vllm"})
+        threshold: "2"

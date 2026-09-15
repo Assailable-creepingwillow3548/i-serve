@@ -1,0 +1,17 @@
+# ClusterIP only. Reaching it is one port-forward (../README.md); an Ingress
+# on the kind edge would need Grafana told about its sub-path and would put a
+# password-less admin UI on the same port as the API -- the wrong trade for a
+# laptop cluster, and a decision to take with the edge, not here.
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  labels:
+    app.kubernetes.io/name: grafana
+spec:
+  selector:
+    app.kubernetes.io/name: grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

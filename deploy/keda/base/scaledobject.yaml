@@ -1,0 +1,59 @@
+# Queue-depth autoscaling. The threshold is derived in docs/SLO.md §4 and is not
+# restated here: 125 ms of queue budget against a seat that frees every 833 ms
+# puts the tolerable depth below one request, so "1" is the smallest defensible
+# value and the eagerness that follows is bounded below, not by a bigger number.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: vllm
+spec:
+  scaleTargetRef:
+    name: vllm
+
+  # There is no `pollingInterval`, and KEDA's admission webhook is the reason:
+  # the field only applies when minReplicaCount or idleReplicaCount is 0. Above
+  # zero KEDA is an external-metrics adapter and the *HPA* drives the loop, at
+  # the controller manager's sync period (15 s by default). Setting it here
+  # would be a knob that reads as tuning and changes nothing.
+  #
+  # Never zero. Scale-to-zero on a model server means the next request pays the
+  # whole weight load, and the accelerator is reserved either way on a fixed
+  # node pool — there is nothing to give back.
+  minReplicaCount: 1
+
+  # A cap, and on a fixed node pool it is a hard fact rather than a preference:
+  # a replica past the number of accelerators in the pool has nowhere to land
+  # and sits Pending forever, which reads as a broken scaler.
+  maxReplicaCount: 4
+
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          # Five minutes of quiet before shrinking. Removing a replica throws
+          # away a weight load that cost minutes to do, so the asymmetry is
+          # deliberate: add fast, remove slowly.
+          stabilizationWindowSeconds: 300
+        scaleUp:
+          stabilizationWindowSeconds: 0
+
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc:9090
+        # sum(), because the query must describe the fleet. Reading one pod's
+        # queue — which is what a Service-addressed scrape would give — and
+        # dividing the fleet by it is how a scaler oscillates.
+        #
+        # {service="vllm"}: the stable track only, which is the Deployment this
+        # object scales. Without the selector a canary's queue is summed in,
+        # and the scaler answers it with stable replicas that cannot take a
+        # request already routed to the canary — watched on kind, 2026-09-03:
+        # one canary Pod queuing, the stable track scaled 1 → 4 with every new
+        # replica idle (../../manifests/README.md, "Canary, observed on kind").
+        # Re-run with the selector the same day: stable stayed at one replica
+        # while the canary's queue reached 13.
+        # The label is set by Prometheus relabeling from the Service name
+        # (../../observability/prometheus/prometheus.yml).
+        query: sum(vllm:num_requests_waiting{service="vllm"})
+        threshold: "1"

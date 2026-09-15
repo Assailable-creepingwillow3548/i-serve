@@ -1,0 +1,113 @@
+L40S run 2, 2026-08-23 -- startup lines, verbatim, from /workspace/run2/serve-*.log.
+Copied unaltered except for wrapping long lines; the config dumps are elided at [...]
+because only the fields named below are load-bearing.
+
+=== serve-bf16-2048.log -- configuration 1, the reproducibility gate ==============
+
+(APIServer pid=5576) INFO 08-23 08:10:22 [api_utils.py:273] non-default args:
+  {'model_tag': 'Qwen/Qwen3-8B', 'host': '127.0.0.1', 'model': 'Qwen/Qwen3-8B',
+   'max_model_len': 9000, 'gpu_memory_utilization': 0.9,
+   'enable_prefix_caching': False, 'max_num_batched_tokens': 2048}
+(EngineCore pid=6175) INFO 08-23 08:10:46 [core.py:121] Initializing a V1 LLM engine
+  (v0.27.1) with config: [...] dtype=torch.bfloat16, max_seq_len=9000,
+  kv_cache_dtype=auto, [...] enable_prefix_caching=False, enable_chunked_prefill=True,
+  [...] 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, [...]
+(EngineCore pid=6175) INFO 08-23 08:10:49 [cuda.py:482] Using FLASH_ATTN attention
+  backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN',
+  'FLEX_ATTENTION'].
+(EngineCore pid=6175) INFO 08-23 08:11:18 [backends.py:1155] Dynamo bytecode transform
+  time: 6.49 s
+(EngineCore pid=6175) INFO 08-23 08:11:41 [backends.py:393] Compiling a graph for
+  compile range (1, 2048) takes 23.40 s
+(EngineCore pid=6175) INFO 08-23 08:11:47 [kv_cache_utils.py:2235] GPU KV cache size:
+  169,833 tokens
+(EngineCore pid=6175) INFO 08-23 08:11:47 [kv_cache_utils.py:2236] Maximum concurrency
+  for 9,000 tokens per request: 18.87x
+(EngineCore pid=6175) INFO 08-23 08:11:54 [model_runner.py:791] Graph capturing
+  finished in 6 secs, took 0.57 GiB
+(EngineCore pid=6175) INFO 08-23 08:11:54 [gpu_worker.py:789] Free memory on device
+  (44.1/44.52 GiB) on startup. Desired GPU memory utilization is (0.9, 40.07 GiB).
+  Actual usage is 15.54 GiB for consumed memory (weights + non-torch), 1.18 GiB for
+  peak activation, and 0.57 GiB for CUDAGraph memory. Replace gpu_memory_utilization
+  config with `--kv-cache-memory=24293682688` (22.63 GiB) to fit into requested memory,
+  or `--kv-cache-memory=28620205568` (26.65 GiB) to fully utilize gpu memory. Current
+  kv cache memory in use is 23.34 GiB.
+
+=== the max_num_batched_tokens confirmation, all six servers ======================
+    (grep -h max_num_batched_tokens /workspace/run2/serve-*.log)
+
+(APIServer pid= 5576) 08:10:22  max_num_batched_tokens: 2048              [bf16-2048]
+(APIServer pid=29458) 08:43:15  max_num_batched_tokens:  512              [bf16-512]
+(APIServer pid=29458) 08:43:15  Chunked prefill is enabled with max_num_batched_tokens=512.
+(APIServer pid=33570) 08:47:37  max_num_batched_tokens: 1024              [bf16-1024]
+(APIServer pid=33570) 08:47:37  Chunked prefill is enabled with max_num_batched_tokens=1024.
+(APIServer pid=37694) 08:52:00  max_num_batched_tokens: 4096              [bf16-4096]
+(APIServer pid=37694) 08:52:01  Chunked prefill is enabled with max_num_batched_tokens=4096.
+(APIServer pid=44902) 09:01:06  max_num_batched_tokens:  512              [bf16-512b]
+(APIServer pid=44902) 09:01:07  Chunked prefill is enabled with max_num_batched_tokens=512.
+(APIServer pid=49506) 09:06:44  max_num_batched_tokens: 2048, kv_cache_dtype: 'fp8'  [fp8-2048]
+
+=== serve-fp8-2048.log -- block C =================================================
+
+(APIServer pid=49506) INFO 08-23 09:06:44 [api_utils.py:273] non-default args:
+  {'model_tag': 'Qwen/Qwen3-8B', 'host': '127.0.0.1', 'model': 'Qwen/Qwen3-8B',
+   'max_model_len': 9000, 'gpu_memory_utilization': 0.9, 'kv_cache_dtype': 'fp8',
+   'enable_prefix_caching': False, 'max_num_batched_tokens': 2048}
+(EngineCore pid=49907) INFO 08-23 09:07:01 [cuda.py:482] Using FLASHINFER attention
+  backend out of potential backends: ['FLASHINFER', 'TRITON_ATTN'].
+(EngineCore pid=49907) INFO 08-23 09:07:42 [kv_cache_utils.py:2235] GPU KV cache size:
+  339,666 tokens
+(EngineCore pid=49907) INFO 08-23 09:07:42 [kv_cache_utils.py:2236] Maximum concurrency
+  for 9,000 tokens per request: 37.74x
+(EngineCore pid=49907) INFO 08-23 09:07:42 [flashinfer.py:824] FlashInfer resolved query
+  dtypes: prefill=torch.bfloat16, decode=torch.bfloat16,
+  decode_backend=flashinfer-native, kv_cache_dtype=torch.float8_e4m3fn, arch=sm89
+(EngineCore pid=49907) INFO 08-23 09:07:47 [gpu_worker.py:789] Free memory on device
+  (44.1/44.52 GiB) on startup. Desired GPU memory utilization is (0.9, 40.07 GiB).
+  Actual usage is 15.54 GiB for consumed memory (weights + non-torch), 1.18 GiB for
+  peak activation, and 0.94 GiB for CUDAGraph memory. Replace gpu_memory_utilization
+  config with `--kv-cache-memory=23901515264` (22.26 GiB) to fit into requested memory,
+  or `--kv-cache-memory=28228038144` (26.29 GiB) to fully utilize gpu memory. Current
+  kv cache memory in use is 23.34 GiB.
+
+No scale line was logged. FP8 scales are uncalibrated and default to 1.0; accuracy was
+not measured in this run and no claim about it is made anywhere in the write-up.
+
+=== serve-bf16-ctl.log -- the conditional control, which did NOT do what was intended =
+
+VLLM_ATTENTION_BACKEND=FLASHINFER was exported before the launch and had no effect:
+
+(EngineCore pid=57428) INFO 08-23 09:16:16 [cuda.py:482] Using FLASH_ATTN attention
+  backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN',
+  'FLEX_ATTENTION'].
+(EngineCore pid=57428) INFO 08-23 09:16:23 [kv_cache_utils.py:2235] GPU KV cache size:
+  176,994 tokens
+
+=== serve-bf16-fi.log -- the control, done with the flag that works ================
+
+(APIServer pid=61479) INFO 08-23 09:21:00 [api_utils.py:273] non-default args:
+  {'model_tag': 'Qwen/Qwen3-8B', 'host': '127.0.0.1', 'model': 'Qwen/Qwen3-8B',
+   'max_model_len': 9000, 'attention_backend': 'FLASHINFER',
+   'gpu_memory_utilization': 0.9, 'enable_prefix_caching': False,
+   'max_num_batched_tokens': 2048}
+(EngineCore pid=61835) INFO 08-23 09:21:14 [cuda.py:422] Using
+  AttentionBackendEnum.FLASHINFER backend.
+(EngineCore pid=61835) INFO 08-23 09:21:56 [kv_cache_utils.py:2235] GPU KV cache size:
+  169,833 tokens
+
+Note the different log line and code path: when the backend is forced, vLLM prints
+"Using AttentionBackendEnum.X backend." from cuda.py:422 and never prints the
+"out of potential backends" line from cuda.py:482. Grepping for the latter alone
+returns nothing and reads like a failure.
+
+=== metrics sampler, whole session ================================================
+    1 Hz against /metrics, 4 105 samples, /workspace/run2/metrics.log
+
+max vllm:num_requests_running     106
+max vllm:num_requests_waiting      30
+max vllm:num_preemptions_total      2
+max vllm:kv_cache_usage_perc    0.998211
+
+Read after block A alone: running 106, waiting 5, preemptions 2. Both preemptions and
+the 106-seat maximum therefore belong to block A at 4.0 req/s; the deeper queue came
+later, from the c=32 closed-loop levels.

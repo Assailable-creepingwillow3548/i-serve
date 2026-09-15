@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>i-serve — the price of a promise</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-repo="https://github.com/alexGitSpace/i-serve">
+<header class="top">
+  <h1>i-serve</h1>
+  <nav id="nav">
+    <a aria-current="page">The page</a>
+    <a data-doc="docs/benchmarks/">How it was measured</a>
+    <a data-doc="README.md#running-it-on-kind">Run it yourself</a>
+    <a data-repo-link>GitHub</a>
+  </nav>
+</header>
+
+<div class="body">
+<!-- ------------------------------------------------------------- rail -->
+<aside class="rail">
+  <p class="note">Numbers here are the best the hardware could do. A real deployment lands a little above them. Nothing on this page reads your cluster.</p>
+  <div class="steps" id="steps">
+    <button type="button" data-step="step-speed"><span class="n">1</span><span><span class="t">Speed</span><br><span class="r">size it before you rent</span></span></button>
+    <button type="button" data-step="step-cost"><span class="n">2</span><span><span class="t">Cost</span><br><span class="r">price a product, compare cards</span></span></button>
+    <button type="button" data-step="step-trouble"><span class="n">3</span><span><span class="t">Trouble</span><br><span class="r">read the dashboard on a bad morning</span></span></button>
+  </div>
+  <div class="keys">
+    <div><span class="badge measured">measured</span><span>checked on a real card</span></div>
+    <div><span class="badge prior">prior</span><span>from a spec sheet, unchecked</span></div>
+  </div>
+</aside>
+
+<main>
+<!-- ------------------------------------------------ the situation -->
+<section class="step" id="step-situation">
+  <p class="lede">Running an AI model on a rented GPU is a trade between speed, how many people you serve at once, and money. Describe your situation, and the page works out the trade.</p>
+  <div class="situation">
+    <p class="sentence">I serve
+      <span class="edit-wrap"><button type="button" class="edit" data-pop="pop-model" aria-expanded="false" id="v-model">—</button>
+        <span class="badge" id="model-badge"></span>
+        <span class="pop" id="pop-model" hidden>
+          <label><span class="lab">model</span><select id="model"></select></label>
+          <span class="hint" id="model-prov"></span>
+          <span class="hint">Pricing a model is not serving it: the second one is arithmetic over its config, never run here.</span>
+        </span></span>
+      on one
+      <span class="edit-wrap"><button type="button" class="edit" data-pop="pop-accelerator" aria-expanded="false" id="v-accelerator">—</button>
+        <span class="badge" id="accel-badge"></span>
+        <span class="pop" id="pop-accelerator" hidden>
+          <label><span class="lab">card</span><select id="accelerator"></select></label>
+          <span class="hint" id="accel-prov"></span>
+        </span></span>
+      that costs me
+      <span class="edit-wrap"><button type="button" class="edit mono" data-pop="pop-rate" aria-expanded="false" id="v-rate">—</button>
+        <span class="pop" id="pop-rate" hidden>
+          <label><span class="lab">$ per hour</span><span class="row"><input type="number" id="rate" min="0.01" step="0.01"><button type="button" class="small" id="rate-reset">card default</button></span></label>
+          <span class="hint" id="rate-prov"></span>
+        </span></span>
+      an hour. A typical prompt is
+      <span class="edit-wrap"><button type="button" class="edit mono" data-pop="pop-prompt" aria-expanded="false" id="v-prompt">—</button>
+        <span class="pop" id="pop-prompt" hidden>
+          <label><span class="lab">prompt tokens</span><span class="row"><input type="range" id="prompt-range" min="0" max="1000"><input type="number" id="prompt" min="1" max="32768"></span></label>
+          <span class="hint">Log scale, 128 to 32 768. Everything the model reads before it answers: system prompt, history, the question.</span>
+        </span></span>
+      tokens and the answer
+      <span class="edit-wrap"><button type="button" class="edit mono" data-pop="pop-output" aria-expanded="false" id="v-output">—</button>
+        <span class="pop" id="pop-output" hidden>
+          <label><span class="lab">output tokens</span><span class="row"><input type="range" id="output-range" min="1" max="4096"><input type="number" id="output" min="1"></span></label>
+          <span class="hint">A seat reserves room for prompt plus answer.</span>
+        </span></span>;
+      about
+      <span class="edit-wrap"><button type="button" class="edit mono" data-pop="pop-hit" aria-expanded="false" id="v-hit">—</button>
+        <span class="pop" id="pop-hit" hidden>
+          <label><span class="lab">prefix cache hit rate, %</span><span class="row"><input type="range" id="hit-range" min="0" max="100" step="5"><input type="number" id="hit" min="0" max="100" step="5"></span></label>
+          <span class="hint">The share of each prompt the card has already seen: a shared system prompt, the same examples. A property of your traffic, not of the card.</span>
+        </span></span>
+      of each prompt repeats something the card has already seen.</p>
+    <div class="actions">
+      <p class="hint">Change anything dotted. Every answer below follows. A token is about three quarters of an English word.</p>
+      <span class="spacer"></span>
+      <button type="button" class="ghost" data-pin>Keep this to compare</button>
+      <button type="button" class="ghost" id="copy-link">Copy link</button>
+    </div>
+    <div class="compare" hidden></div>
+    <details class="more-assumptions" id="assumptions">
+      <summary>More assumptions, and the numbers behind the answers</summary>
+      <form class="inputs" id="inputs" onsubmit="return false">
+        <label><span class="lab">first-token target (TTFT p99), ms</span><input type="number" id="ttft" min="1" step="1">
+          <span class="hint">how long a person may wait for the first word</span></label>
+        <div class="radios"><span class="lab">KV cache dtype</span>
+          <label><input type="radio" name="kv" value="2"> BF16</label><label><input type="radio" name="kv" value="1"> FP8</label>
+          <span class="hint">FP8 stores each seat's memory in half the bytes: twice the room, twice the time limit, the same gap between them</span></div>
+        <label><span class="lab">gpu_memory_utilization, %</span><span class="row"><input type="range" id="gmu-range" min="30" max="98"><input type="number" id="gmu" min="5" max="99"></span>
+          <span class="hint">the share of the card the engine may use; its startup log outranks this</span></label>
+      </form>
+      <div class="detail-grid" id="outputs"></div>
+      <div class="coefficients" id="coefficients"></div>
+    </details>
+  </div>
+</section>
+
+<!-- ---------------------------------------------------------- step 1 -->
+<section class="step" id="step-speed">
+  <div class="step-head">
+    <div class="lab">1 · Speed</div>
+    <h2 id="slo-question">How fast should each word appear?</h2>
+    <p class="why" id="slo-why">People reading a chat notice anything slower than about 50 ms per token. A batch job only needs its deadline, so it can trade speed for seats.</p>
+  </div>
+  <div class="controls">
+    <div class="seg">
+      <button type="button" data-preset="interactive">Someone is reading</button>
+      <button type="button" data-preset="batch">Nobody is waiting</button>
+    </div>
+    <label class="slider"><span class="end">snappy</span><input type="range" id="tpot-range" min="10" max="300" step="1" aria-label="ms per token"><span class="end">relaxed</span></label>
+    <span class="promise-out"><input type="number" id="tpot-num" min="1" max="1000" step="1" aria-label="ms per token"><span class="unit" id="tpot-label">ms per token</span></span>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="lab" id="hw-lab">the card can hold</div>
+      <div class="num" id="hw-num">—</div>
+      <p id="hw-text"></p>
+    </div>
+    <div class="stat">
+      <div class="lab">you can safely promise <span class="badge" id="svc-badge"></span></div>
+      <div class="num" id="svc-num">—</div>
+      <p id="svc-text"></p>
+    </div>
+    <div class="stat">
+      <div class="lab">first word after <span class="badge" id="ttft-badge"></span></div>
+      <div class="num" id="ttft-num">—</div>
+      <p id="ttft-text"></p>
+    </div>
+  </div>
+  <p class="guard" id="slo-guard"></p>
+
+  <figure id="fig-seats">
+    <div class="plot"></div>
+    <ul class="legend"></ul>
+    <p class="hidden-note" hidden></p>
+    <p class="finding" hidden></p>
+  </figure>
+</section>
+
+<!-- ---------------------------------------------------------- step 2 -->
+<section class="step" id="step-cost">
+  <div class="step-head">
+    <div class="lab">2 · Cost</div>
+    <h2 id="cost-question">What does a million tokens cost at that speed?</h2>
+    <p class="why" id="cost-why-line">Only tokens that arrived on time count. A faster promise means fewer people share the hourly bill, so each token costs more.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="lab" id="cost-lab">for you, today</div>
+      <div class="num" id="cost-num">—</div>
+      <p id="cost-text"></p>
+    </div>
+    <div class="stat">
+      <div class="lab" id="alt1-lab">hardware alone</div>
+      <div class="num" id="alt1-num">—</div>
+      <p id="alt1-text"></p>
+    </div>
+    <div class="stat">
+      <div class="lab" id="alt2-lab">the cheapest move</div>
+      <div class="num" id="alt2-num">—</div>
+      <p id="alt2-text"></p>
+    </div>
+  </div>
+
+  <figure id="fig-cost">
+    <div class="plot"></div>
+    <ul class="legend"></ul>
+    <p class="hidden-note" hidden></p>
+    <p class="finding" hidden></p>
+  </figure>
+</section>
+
+<!-- ---------------------------------------------------------- step 3 -->
+<section class="step" id="step-trouble">
+  <div class="step-head">
+    <div class="lab">3 · Trouble</div>
+    <h2>It got slow. Where do you look first?</h2>
+    <p class="why">Answer what your dashboard shows; <i>don't know</i> is fine. The page names the one cause that fits your operating point, and the knob for it.</p>
+  </div>
+  <div class="flow" id="flow">
+    <div class="q">
+      <span class="qtext">Are people queuing up? <small>row 3 · waiting</small></span>
+      <div class="choices" data-q="queue">
+        <button type="button" data-v="yes">yes</button><button type="button" data-v="no">no</button><button type="button" data-v="dk">don't know</button>
+      </div>
+    </div>
+    <div class="q">
+      <span class="qtext">Is every seat taken? <small>row 3 · running = max_num_seqs</small></span>
+      <div class="choices" data-q="seats">
+        <button type="button" data-v="yes">yes</button><button type="button" data-v="no">no</button><button type="button" data-v="dk">don't know</button>
+      </div>
+    </div>
+    <div class="q">
+      <span class="qtext">Is the first word late? <small id="q-ttft-small">row 2 · TTFT p99 against its floor</small></span>
+      <div class="choices" data-q="ttft">
+        <button type="button" data-v="far">very</button><button type="button" data-v="near">a little</button><button type="button" data-v="ok">no</button><button type="button" data-v="dk">don't know</button>
+      </div>
+    </div>
+    <div class="q">
+      <span class="qtext">Are the words slow? <small id="q-tpot-small">row 2 · TPOT p99 against the promise</small></span>
+      <div class="choices" data-q="tpot">
+        <button type="button" data-v="physics">a little, near the floor</button><button type="button" data-v="far">very</button><button type="button" data-v="ok">no</button><button type="button" data-v="dk">don't know</button>
+      </div>
+    </div>
+    <label class="changed"><input type="checkbox" id="changed"> something was changed recently: a config, a model version, a card</label>
+  </div>
+  <div id="advice"></div>
+  <details class="expert">
+    <summary>I have the numbers, let me type them</summary>
+    <p class="hint">Leave a field empty for <em>No data</em>. On <code>kind</code> that is most of them: the stub exports the two queue gauges and no histogram.</p>
+    <form class="readings" id="readings" onsubmit="return false"></form>
+    <div class="derived" id="derived"></div>
+  </details>
+</section>
+</main>
+</div>
+
+<footer>
+  <div class="grid">
+    <div class="lab">Where the numbers come from</div>
+    <div class="lines">
+      <p><span class="badge measured">measured</span>Three sessions on a rented L40S, written up run by run with the predictions that missed. <a data-doc="docs/benchmarks/">The runs</a></p>
+      <p><span class="badge prior">prior</span>Cards nobody has run here yet carry spec-sheet numbers, marked everywhere they appear. <a data-doc="docs/adding-a-run.md">Add a run</a></p>
+      <p class="quiet">Want the arithmetic in a terminal, the cluster on your laptop, or the derivations? <a data-doc="docs/audience.md">Start here</a>, by how much time you have.</p>
+    </div>
+  </div>
+  <div class="fine">
+    <span id="selftest" class="badge">parity check pending</span>
+    <span>Formulas: a port of <code>bench/roofline.py</code>, held equal to it by <span id="golden-count"></span> golden operating points on every load.</span>
+    <span id="source-link"></span>
+    <span>Apache-2.0.</span>
+  </div>
+</footer>
+<div id="tooltip" hidden></div>
+
+<script src="data/model.js"></script>
+<script src="data/golden.js"></script>
+<script src="data/symptom-map.js"></script>
+<script src="terms.js"></script>
+<script src="calc.js"></script>
+<script src="selftest.js"></script>
+<script src="draw.js"></script>
+<script src="advisor.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>
