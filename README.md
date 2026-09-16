@@ -15,9 +15,9 @@ One row per prediction that named a two-sided value — a range is drawn at its
 midpoint and a one-sided bound is left out, so this is a selection of the three
 §9 tables rather than all of them. The counts, the misses and the hollow marks
 are on the picture and are not repeated here; what a drawing cannot show is what
-a miss cost. Run 3's seat count under prefix caching came out **56 % low**
-against the predicted range, 64 % against its midpoint, and rewriting
-[docs/SLO.md](docs/SLO.md) §6 is the bill. Row by row, with the coefficient each
+a miss cost. Run 3's seat count under prefix caching came out **56 % higher** than the §6
+row predicts, and 64 % above the midpoint of the 22–24 range the runsheet named;
+rewriting [docs/SLO.md](docs/SLO.md) §6 is the bill. Row by row, with the coefficient each
 one used: §9 of every report in [docs/benchmarks/](docs/benchmarks/).
 
 ## 1. Speed: are we inside SLO?
@@ -83,7 +83,7 @@ queue alert to pending and then firing, and both unwind once the clients are
 killed — second by second in `deploy/observability/README.md`, the loop itself
 under *Pushing load at it* below.
 
-![The dashboard mid-breach, with QueueBeyondTTFTBudget firing](deploy/observability/breach-alert-firing.jpg)
+![Queue per replica during the breach: one pod at 20 waiting, three new pods at 0, the alert threshold at 1, and the shaded band the alert firing](deploy/observability/breach-queue-per-replica.jpg)
 
 From the alert the runbook hands off to
 [docs/symptom-map.md](docs/symptom-map.md): seven symptoms, each with the number
