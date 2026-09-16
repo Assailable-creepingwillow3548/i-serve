@@ -1,0 +1,58 @@
+# What this enforces, and why it is a workflow of its own.
+#
+# `router/` makes three claims that are cheap to state and easy to leave behind:
+# that the ring moves far fewer keys than `hash mod n` when the fleet grows,
+# that a body read for routing still reaches the engine whole, and that a stream
+# is not buffered on the way back. All three are properties, not opinions, and
+# all three are asserted in Go tests that measure rather than assume.
+#
+# `-race` is not optional here. The router's whole design is a snapshot swapped
+# under readers and a counter shared across rebuilds; a suite that passes
+# without the detector proves nothing about the part that is hard.
+#
+# Separate from `bench.yml` because that workflow's claim is "nothing is
+# installed", and this one needs a Go toolchain. Mixing them would weaken the
+# claim that makes `bench.yml` worth having.
+name: router
+
+on:
+  push:
+    paths: ["router/**", ".github/workflows/router.yml"]
+  pull_request:
+    paths: ["router/**", ".github/workflows/router.yml"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          # The floor the module declares. Pinned rather than `stable`, because
+          # a router that only compiles on the newest toolchain has a
+          # requirement nobody wrote down.
+          go-version: "1.20"
+
+      # gofmt is the whole style discussion in this language, so it is a gate
+      # and not a habit.
+      - name: gofmt
+        working-directory: router
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "not gofmt-clean:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: go vet
+        working-directory: router
+        run: go vet ./...
+
+      - name: go test -race
+        working-directory: router
+        run: go test -race -v ./...
+
+      # The command README.md tells a reader to type.
+      - name: the build from router/README.md
+        working-directory: router
+        run: go build -o bin/prefix-router .

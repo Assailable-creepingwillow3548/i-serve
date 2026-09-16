@@ -43,7 +43,7 @@ fi
 # -I skips binary files, whose bytes decode into stray Cyrillic -- the two
 # dashboard screenshots are why that flag is here and not an afterthought.
 foreign=$(git grep --cached -lIP "[\x{0400}-\x{04FF}]" -- \
-    bench controllers deploy docs site .github .githooks \
+    bench controllers deploy docs router site .github .githooks \
     README.md CONTRIBUTING.md LICENSE CLAUDE.md up.sh down.sh || true)
 if [ -n "$foreign" ]; then
     printf 'pre-commit: non-English text in repository content:\n%s\n' "$foreign" >&2
