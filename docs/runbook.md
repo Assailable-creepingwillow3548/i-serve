@@ -109,7 +109,7 @@ carry traffic through it unless one is applied first.
 ## Morning triage — five minutes on one dashboard
 
 The dashboard is `vLLM — SLO` (`deploy/observability/grafana/`; reaching it is
-one port-forward, in the repository `README.md`). It is read **top to bottom and
+one port-forward, in [running-on-kind.md](running-on-kind.md)). It is read **top to bottom and
 never bottom up**, because its three rows are ordered by the question they
 answer, and the last row is only a question when the first row says so. Read it
 once with the *Track* variable at *All*; if anything is red, once more per track

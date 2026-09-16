@@ -255,9 +255,9 @@
    "id": "k8s.edge.status-codes",
    "symptom": "k8s",
    "kind": "branch",
-   "text": "503 from the edge in the seconds after a deploy or a scale-out → the route exists and its endpoint set is empty. Distinguish by code: 503 no live endpoint, 404 no route at all, **empty reply** (curl exit 52) no controller on the node whose ports are mapped. **measured** (README)",
+   "text": "503 from the edge in the seconds after a deploy or a scale-out → the route exists and its endpoint set is empty. Distinguish by code: 503 no live endpoint, 404 no route at all, **empty reply** (curl exit 52) no controller on the node whose ports are mapped. **measured** (running on kind)",
    "evidence": "measured",
-   "source": "../README.md",
+   "source": "running-on-kind.md",
    "when": {
     "all": []
    },

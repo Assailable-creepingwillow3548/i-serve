@@ -11,9 +11,9 @@ read at 03:00 is `docs/runbook.md`, "Morning triage" — not restated here eithe
 |---|---|
 | `prometheus/prometheus.yml` | Scrape config: one target per vLLM Pod via endpoint discovery, so `sum()` in a query describes the fleet. Admits both tracks' Services and stamps the Service name as `service`, so a canary is scraped and can be told from stable in a query (`../manifests/overlays/kind-canary`). |
 | `prometheus/rules.yml` | Two alerting rules on the TTFT objective: the SLI from the engine's histogram, and the queue proxy that can be tested without an engine. |
-| `prometheus/` (rest) | Namespace, RBAC for discovery, Deployment with 2 h retention, Service. `kubectl apply -k` this directory; the full order is the repository `README.md`. |
+| `prometheus/` (rest) | Namespace, RBAC for discovery, Deployment with 2 h retention, Service. `kubectl apply -k` this directory; the full order is `docs/running-on-kind.md`. |
 | `grafana/dashboards/vllm-slo.json` | The one dashboard, as the file Grafana loads. Three rows in triage order — the promise, what users get and its price, where the gap is — and every panel's *description* says which section of `docs/SLO.md` it reads and whether it lights on `kind`. |
-| `grafana/` (rest) | Deployment reading three ConfigMaps by provisioning (datasource, dashboard provider, the JSON), Service. No login, viewer only, nothing persisted: the file is the dashboard. `kubectl apply -k` after `prometheus/`; reaching it is one port-forward, in the repository `README.md`. |
+| `grafana/` (rest) | Deployment reading three ConfigMaps by provisioning (datasource, dashboard provider, the JSON), Service. No login, viewer only, nothing persisted: the file is the dashboard. `kubectl apply -k` after `prometheus/`; reaching it is one port-forward, in `docs/running-on-kind.md`. |
 
 There is no Alertmanager. "Fires" in this directory means the rule's state at
 `/alerts` reads `firing` and the `ALERTS` series carries it — which is what the dashboard's *Alerts*

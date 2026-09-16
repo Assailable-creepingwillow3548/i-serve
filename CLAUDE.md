@@ -16,12 +16,13 @@ number is traceable to the run or the derivation that produced it.
 
 | File | Authority over |
 |---|---|
-| `README.md` | project legend, model choice, repository layout, how to run it |
+| `README.md` | project legend, model choice, repository layout, the route to the page |
 | `docs/audience.md` | who the repository is for, what is real on `kind` and what is fixture, and the measured / derived / assumed split |
 | `docs/SLO.md` | targets, floors, concurrency ceiling, cost formula, empirical coefficients, and how each was derived |
 | `docs/GLOSSARY.md` | vocabulary and notation, including architectures that break the standard formulas |
 | `docs/accelerator-landscape.md` | the accelerator market: vendors, their attack surface on the decode equation, and the freshness of each claim |
 | `docs/architecture.md` | the request path from ingress to GPU |
+| `docs/running-on-kind.md` | bringing the stack up on `kind`: the eleven commands, the two load-bearing waits, the stub contract |
 | `docs/runbook.md` | canary rollout, OOM handling, morning triage |
 | `docs/benchmarks/` | measured results; predicted-vs-measured tables |
 | `docs/benchmarks/runsheets/` | per-run checklists: the commands and the predicted numbers a run must face, written before GPU money is spent |

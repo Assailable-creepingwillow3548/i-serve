@@ -14,7 +14,7 @@ runs without a GPU may be reported as a measurement of vLLM.**
 
 Those two lines are this component only. The full bring-up — the cluster, the
 edge, the metrics and the autoscaler, in the order the admission webhooks
-require — is in the repository `README.md`, and it is the only copy.
+require — is in `docs/running-on-kind.md`, and it is the only copy.
 
 ## What the stub is and is not
 

@@ -895,7 +895,7 @@ which is not the same signature as a refusal.
 object before persisting it. **`failurePolicy`** decides what an unreachable
 webhook means: `Fail` rejects the object, `Ignore` admits it **unvalidated**.
 Both appear in this stack, and the second is the quieter failure — see the
-bring-up order in the repository `README.md`.
+bring-up order in [running-on-kind.md](running-on-kind.md).
 
 **Default backend** — where an ingress controller sends a request matching no
 rule. A 404 from it therefore means "no route", as against a **503**, which means

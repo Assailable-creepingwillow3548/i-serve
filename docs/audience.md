@@ -76,8 +76,8 @@ concurrency ceiling).
 
 Bring the whole stack up on a CPU-only `kind` cluster — ingress, queue-depth
 autoscaling, Prometheus, Grafana and a vLLM-shaped workload — with no
-accelerator and nothing to pay for. The command order is in the repository
-`README.md`.
+accelerator and nothing to pay for. The command order is in
+[running-on-kind.md](running-on-kind.md).
 
 What you can learn this way is **what the system does**, not what the numbers
 are. That distinction is not a disclaimer; it is the design, and the next

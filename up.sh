@@ -3,7 +3,7 @@
 # Bring the whole stack up on kind, in one command.
 #
 # This script is not the documentation. The annotated command block in
-# README.md, "Running it on kind", is: it says why the two `rollout status`
+# docs/running-on-kind.md is: it says why the two `rollout status`
 # lines are load-bearing for different reasons and why the last `curl` retries.
 # Every wait below is there because removing it was tried and broke something.
 # A reader who wants to know what this does should read that section; this file
@@ -50,7 +50,7 @@ for tool in kind kubectl docker curl; do
 done
 if ((${#missing[@]})); then
     echo "missing on PATH: ${missing[*]}" >&2
-    echo "install them first -- prerequisites are in README.md" >&2
+    echo "install them first -- prerequisites are in docs/running-on-kind.md" >&2
     exit 1
 fi
 if ! docker info >/dev/null 2>&1; then

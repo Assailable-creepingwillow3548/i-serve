@@ -29,7 +29,7 @@ is the quiet kind of mistake. ingress-nginx makes the opposite choice, `Fail`, a
 is discussed in `../ingress/README.md`.
 
 What else has to be running before this works — the metrics it reads, the
-Deployment it scales — is in the repository `README.md`, which holds the only
+Deployment it scales — is in `docs/running-on-kind.md`, which holds the only
 copy of the full order.
 
 ## What the loop actually is
