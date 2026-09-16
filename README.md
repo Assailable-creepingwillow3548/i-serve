@@ -217,4 +217,5 @@ with what it is and how far it got.
 | `deploy/keda/` | Queue-depth autoscaling on `vllm:num_requests_waiting` | watched scaling 1→4→1 on `kind` |
 | `deploy/observability/` | Prometheus rules, Grafana dashboards as code | queue alert watched firing; histogram panels dark until a card |
 | `deploy/terraform/` | GPU node provisioning | one MI300X droplet; validated, never applied |
+| `router/` | Go: a prefix-aware router, choosing the replica that already holds the prompt | binary and tests; runs off-cluster and is not in the request path |
 | `controllers/modelwarmup/` | Go operator: warm a model before it joins routing | architecture note only, and it argues against the code |

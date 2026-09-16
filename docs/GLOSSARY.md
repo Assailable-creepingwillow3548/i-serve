@@ -933,6 +933,46 @@ gateways (llm-d, AIBrix, vLLM production-stack) build on it rather than on
 Ingress: it can route on model identity and cache locality, which an Ingress
 cannot express.
 
+**Prefix-aware routing** — choosing the replica that already holds a request's
+prompt prefix in its KV cache, instead of choosing by turn. What it is worth is
+the gap between the `h` = 0 and `h` = 0.8 columns of [SLO.md](SLO.md) §6; the
+implementation and its limits are `router/README.md`.
+
+**Consistent hashing** — placing replicas and keys on one hash ring and giving a
+key to the first replica at or after it, so that adding a replica moves only the
+arc it claims rather than remapping every key as `hash mod n` does.
+
+**Virtual node** (`-vnodes`) — one of the many ring positions a single replica
+occupies. The traffic imbalance between replicas falls with roughly 1/√vnodes;
+with one position each, four replicas divide the space into four arcs of
+unequal size.
+
+**Bounded loads** (`-bounded-load`, `c`) — the rule that keeps affinity from
+overloading one replica: a key's owner is skipped while its in-flight count is
+at or above `c` x the fleet mean, and the walk continues around the ring.
+`c` = 1 is balance with no affinity; large `c` is affinity with no protection.
+
+**Avalanche step** — a final mixing pass over a hash value, so that inputs
+differing in their last bytes differ in their high bits too. Required wherever a
+hash is used for *ordering* rather than equality — a consistent-hash ring is
+sorted by the high bits, and FNV-1a without this step clusters every position of
+one replica into a single arc (`router/README.md` §3).
+
+**`-key-bytes`** (`prefix-router`) — how many leading bytes of the prompt form
+the routing key; 0 means the whole prompt, which routes only exact repeats. The
+router carries no tokenizer, so the key is bytes and not tokens, and the
+approximation this rests on is `router/README.md` §2.
+
+**BPE** (byte-pair encoding) — the tokenizer family these models use: a
+deterministic left-to-right merge of byte pairs, which is why an identical byte
+prefix yields an identical token prefix up to the token straddling the cut
+(`router/README.md` §2).
+
+**`X-Router-Policy`** (`prefix-router`) — the response header naming which of the
+five routing policies produced the choice: `prefix`, or one of four reasons the
+request fell back to `round_robin`. The list, and why four and not one, is
+`router/README.md` §1.
+
 ---
 
 ## Reasoning models

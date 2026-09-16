@@ -270,7 +270,9 @@ figure is never reported as a measurement ([SLO.md](SLO.md) §9).
   replica that already holds its prefix is worth more than any balance — run 3
   measured 12.5 seats against 37.8 at a hit rate of 0.8 ([SLO.md](SLO.md) §6).
   Fixing it is a Gateway API step and not an annotation
-  (`deploy/ingress/README.md`).
+  (`deploy/ingress/README.md`). A standalone router that makes the decision is
+  written and tested in `router/`, and is deliberately **not** in this path:
+  nothing in this drawing routes on cache locality.
 - **Fixture numbers, which may not be quoted.** The `kind` overlays carry
   `MAX_NUM_SEQS: "4"`, `SIM_DECODE_MS: "20"` and `threshold: "2"` so a laptop can
   push a queue over a ceiling inside a session. The derived values are in
