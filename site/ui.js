@@ -806,7 +806,7 @@
     $("golden-count").textContent = String(window.GOLDEN.length);
   }
   // Every link into the repository reads the same data-repo the advisor's
-  // sources use; until the publication day fills it in, they are plain text.
+  // sources use; without it they stay plain text rather than pointing nowhere.
   function renderNav() {
     for (const a of document.querySelectorAll("a[data-doc]")) {
       const href = repoLink(a.dataset.doc);

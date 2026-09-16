@@ -37,5 +37,21 @@ Three guards, the same three the front-page chart has: `bench/tests/test_export_
 asserts the committed `data/` is what the export produces; `.github/workflows/bench.yml`
 regenerates it on a clean checkout, diffs, and runs `selftest.js`; and
 `.github/workflows/pages.yml` refuses to deploy a page whose JavaScript
-disagrees with Python. `<repo-url>` in `index.html` is filled on the day the
-public repository gets a name.
+disagrees with Python. The repository URL every link into the tree is built from
+is `data-repo` on `<body>` (`index.html`).
+
+## The picture of it in the README
+
+`docs/page.jpg` is the front page's first image and the route to Pages. It is a
+screenshot, not a generated file: nothing in CI holds it equal to the page, so
+re-shoot it whenever the first screen changes, and carry the date in its alt
+text.
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 \
+      --window-size=1280,980 --virtual-time-budget=4000 \
+      --screenshot=/tmp/page.png file://$PWD/site/index.html
+    sips -Z 1280 -s format jpeg -s formatOptions 80 /tmp/page.png --out docs/page.jpg
+
+The window height is chosen so the frame ends below step 1's three numbers: a
+figure cut through a number reads as a fault rather than a fold.
