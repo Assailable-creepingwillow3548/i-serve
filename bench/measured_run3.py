@@ -111,6 +111,23 @@ def dollars_per_1m(tokens_per_second):
     return HOURLY / (tokens_per_second * 3600) * 1e6
 
 
+def slo_seat_rows():
+    """The two levels run 3 ships: the largest load still inside the TPOT target.
+
+    This rule -- take the widest level whose p99 TPOT is under the interactive
+    target, at each hit rate -- decides the seat counts and the cost figures the
+    README and SLO.md section 7 both quote. It lived inside cost()'s printer
+    until the README grew a test that needs the same two rows; a number quoted in
+    two places must be computed in one.
+    """
+    unc = levels("run3-a-h00-clean")
+    cached = levels("run3-a-h80") + levels("run3-a-h80-ext")
+    widest = lambda rows: max(                                  # noqa: E731
+        (lv for lv in rows if lv["p99_tpot_ms"] <= TPOT_TARGET_MS),
+        key=lambda lv: lv["harness_load"])
+    return {"h0": widest(unc), "h80": widest(cached)}
+
+
 def rule():
     print("-" * 78)
 
@@ -289,12 +306,8 @@ def cost():
     print()
     print("COST -- the seat count converted into the only figure a price list needs")
     print()
-    unc = levels("run3-a-h00-clean")
-    cached = levels("run3-a-h80") + levels("run3-a-h80-ext")
-    seat_unc = max((lv for lv in unc if lv["p99_tpot_ms"] <= TPOT_TARGET_MS),
-                   key=lambda lv: lv["harness_load"])
-    seat_cached = max((lv for lv in cached if lv["p99_tpot_ms"] <= TPOT_TARGET_MS),
-                      key=lambda lv: lv["harness_load"])
+    rows = slo_seat_rows()
+    seat_unc, seat_cached = rows["h0"], rows["h80"]
     print(f"{'':10} {'seats':>6} {'out tok/s':>10} {'$/M output':>11}")
     rule()
     for label, lv in (("h = 0", seat_unc), ("h = 0.8", seat_cached)):
