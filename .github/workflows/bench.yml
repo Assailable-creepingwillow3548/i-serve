@@ -121,13 +121,13 @@ jobs:
 
   guards:
     runs-on: ubuntu-latest
-    name: the two refusals, on a branch no hook ever saw
+    name: the three refusals, on a branch no hook ever saw
     steps:
       - uses: actions/checkout@v4
 
       # `.githooks/pre-commit` runs these over the index before a commit exists,
       # but hooks are not carried by `git clone`: a contributor's branch is
-      # checked here and nowhere else. Same two rules, over the checkout.
+      # checked here and nowhere else. Same three rules, over the checkout.
       - name: the symptom map carries no status glyph
         run: |
           if git grep -nE "✅|⚠️|⏳" -- docs/symptom-map.md docs/symptom-map.json; then
@@ -151,3 +151,10 @@ jobs:
             echo "Cyrillic -- the dashboard screenshots are why that flag is there."
             exit 1
           fi
+
+      # The third refusal is a script rather than an inline grep, because it is
+      # the one that also has to run on a push, over every commit being sent --
+      # a credential introduced and then removed is still published. It takes a
+      # tree-ish; here that is the checkout's own HEAD.
+      - name: no commit carries a credential
+        run: sh .githooks/no-secrets.sh HEAD

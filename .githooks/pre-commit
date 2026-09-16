@@ -27,7 +27,7 @@ git add "$root/site/data"
 
 # --- what a commit may not carry -----------------------------------------
 #
-# Two rules the repository states elsewhere, enforced here over the index --
+# Three rules the repository states elsewhere, enforced here over the index --
 # the tree the commit would publish, judged by what was actually staged.
 #
 # A status glyph in the symptom map. The map is a decision tree, not a progress
@@ -49,3 +49,9 @@ if [ -n "$foreign" ]; then
     printf 'pre-commit: non-English text in repository content:\n%s\n' "$foreign" >&2
     exit 1
 fi
+
+# A credential. The rule and every pattern behind it are in the script, which
+# takes a tree-ish so the same check can run on a push and in CI; this is the
+# only one of the three whose subject is text nobody wrote, which is why it is
+# a file of its own and not four more lines here.
+sh "$root/.githooks/no-secrets.sh" --cached
