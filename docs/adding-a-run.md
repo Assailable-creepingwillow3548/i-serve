@@ -66,6 +66,13 @@ one table of paths, and what each directory is.
   hand-typed derivative to verify against. `vllm bench sweep` is the other
   instrument, and [instrument-vllm-bench-sweep.md](instrument-vllm-bench-sweep.md)
   says where it belongs.
+- **Read what you captured before you stage it.** A log is written by the
+  tools, not by you, and two ordinary moves put a credential in one: a
+  benchmark client prints its own arguments, so a `--header "Authorization:
+  Bearer …"` ends up in the `tee`d output beside the numbers; and a shell
+  that dumps `/proc/1/environ` to find one variable dumps all of them.
+  `.githooks/no-secrets.sh` refuses such a commit, but it is the second line of
+  defence — pass the key as `$VAR`, and print a verdict rather than a value.
 - **Count files before and after `git add`.** `.gitignore` ignores `*.log` and
   `results/` and then negates both under `benchmarks/raw/` — because nine
   startup logs were once dropped silently, on the day the volume holding the
@@ -153,7 +160,8 @@ export and a select on the site — and a run per model, because `eff_mem` and
 - [ ] runsheet written, predictions from `bench/predictions.py`, committed before renting
 - [ ] hourly rate read off the console and written into the sheet
 - [ ] startup log captured; Checkpoint A read against the derivation at ±5 %
-- [ ] harness or sweep output under `benchmarks/raw/<card>-<date>/`, with its README
+- [ ] harness or sweep output under `benchmarks/raw/<card>-<date>/`, with its README,
+      read once for a credential before staging (§2)
 - [ ] file count before and after `git add` agrees
 - [ ] `eff_mem` from the median ITL, `mfu` from one uncontended prefill, both reported against the prior
 - [ ] `bench/measured_<run>.py` reads the raw files; the report's §9 table quotes it

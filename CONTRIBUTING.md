@@ -54,6 +54,13 @@ link to it; SI base units in derivations; dense FLOPS rows, never the sparsity
 row; architecture from `config.json`; a derived floor never reported as a
 measurement; repository content in English.
 
+And one rule about the evidence rather than the prose: **no file carries a
+credential.** Raw logs are captured terminal, so a key can arrive in a pull
+request without anyone typing it. `.githooks/no-secrets.sh` refuses the commit,
+runs again on a push over every object being sent, and runs in CI on a branch
+no hook ever saw; `bench/tests/test_no_secrets.py` is what keeps its patterns
+from going quietly inert.
+
 ## How to send it
 
 1. **The runsheet first, as its own pull request, before the run.** In the

@@ -209,7 +209,7 @@ with what it is and how far it got.
 | `bench/` | Load harness, `roofline.py`, the chart generator, the site export; tests in `bench/tests/` | model calibrated; the harness ran run 3 on a card |
 | `site/` | The calculator and the advisor as one static page for Pages | live; parity 211/211 rows |
 | `.github/workflows/` | Tests on Python 3.10 and 3.14, the quick-start commands, the chart, the parity check | installs nothing, which is the claim it tests |
-| `.githooks/` | A pre-commit hook that regenerates the chart and `site/data/` | opt-in: `git config core.hooksPath .githooks` |
+| `.githooks/` | A pre-commit hook that regenerates the chart and `site/data/`, and three refusals — a status glyph on the map, non-English content, a credential in any file | opt-in: `git config core.hooksPath .githooks`; CI runs the three on a branch no hook saw |
 | `deploy/kind/` | Local CPU-only cluster for logic debugging | control plane + two workers |
 | `deploy/manifests/` | vLLM as Deployment, Service and Ingress; a `kind` overlay swaps in a stub | base is the GPU artefact; a canary overlay splits `/v1` by weight |
 | `deploy/ingress/` | ingress-nginx overlay: the edge in front of the Service | route live on `kind`; edge timeout derived and measured |
