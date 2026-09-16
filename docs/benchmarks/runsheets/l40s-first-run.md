@@ -88,9 +88,10 @@ public proxy is an unattended bill.
       already appended, a command-line flag outranks `IdentityFile` from the
       config, and `IdentitiesOnly yes` then pins the session to exactly that wrong
       key. Copy the `user@host` out of that dialog and leave the flag behind. The
-      key in the account is the one whose fingerprint is
-      `SHA256:DsR5jl8tbwFFV5ZtPoqwFTi1gXRKSPKpBRkXbz44C2c` (comment `runpod l40s`),
-      which is what Settings → SSH Public Keys shows. Then treat the first shell as a gate in step 1: open it while
+      key in the account is the one `ssh-keygen -lf ~/.ssh/id_ed25519_runpod.pub`
+      prints, compared on the day against what Settings → SSH Public Keys shows.
+      The fingerprint is not copied into this sheet: it is a permanent identifier
+      of a key that exists, and a reader gains nothing from it. Then treat the first shell as a gate in step 1: open it while
       the weights are still downloading. A pod with no way in is worth terminating
       at minute two and not discovering at minute forty.
 - [ ] **Three values only the RunPod console knows — read them off the deploy page
