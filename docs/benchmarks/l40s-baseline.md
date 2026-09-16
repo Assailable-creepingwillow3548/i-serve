@@ -145,8 +145,8 @@ What is recorded here is the shape of the residual, not a second coefficient.
 
 ## 4. Calibrating `mfu` — prefill
 
-`mfu = 0.45` was the assumption carried since week 1, taken from general
-knowledge and never measured on anything in this repo.
+`mfu = 0.45` was the assumption this repository started from, taken from general
+knowledge and never measured on anything in it.
 
 Measured on the only level with no prefill contention — one request, alone on the
 card:

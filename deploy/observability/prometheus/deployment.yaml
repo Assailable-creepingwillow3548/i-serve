@@ -1,5 +1,5 @@
 # Prometheus as the autoscaler's input, not yet as the observability stack.
-# Weeks 7-8 add dashboards and alert rules on top of this same server; nothing
+# Dashboards and alert rules were added on top of this same server; nothing
 # here is meant to survive as a data store.
 apiVersion: apps/v1
 kind: Deployment

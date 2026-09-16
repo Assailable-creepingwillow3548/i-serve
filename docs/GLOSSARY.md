@@ -692,14 +692,14 @@ only partly established
 
 ## Kubernetes and deployment
 
-Named in `README.md` and the stubs above before the weeks that introduce them, so
-the entries exist as placeholders and get deepened when the work happens.
+Named in `README.md` and the stubs above before the work that introduces them, so
+the entries exist as placeholders and get deepened when it happens.
 
 **Pod** — in Kubernetes, the smallest schedulable unit: one or more containers
 that share a network namespace and storage and are always placed on one node. **A
 RunPod "pod" is not one of these** — it is a single rented container on a GPU host,
-the word borrowed rather than the concept. The collision matters from week 4, when
-both meanings are in play in the same sentence.
+the word borrowed rather than the concept. The collision matters wherever a
+rented host and a cluster are discussed in the same sentence.
 
 **`kind`** (Kubernetes in Docker) — a cluster running inside local containers, with
 no GPU. Used here to debug manifests and controller logic for free, so that GPU

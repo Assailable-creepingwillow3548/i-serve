@@ -163,7 +163,8 @@ faces them (§9). Every figure in it, and the difference between 32 and 12 in th
 second-to-last row, is derived and argued in
 [benchmarks/l40s-baseline.md](benchmarks/l40s-baseline.md).
 
-The last row is why this card was chosen for the week rather than a cheaper one.
+The last row is why this card was chosen for the first runs rather than a
+cheaper one.
 On MI300X the two limits land within 8% of each other (§6), and a near-coincidence
 teaches nothing about which one is which. On L40S the SLO permits 23 sequences
 while memory holds 45, so `max_num_seqs` has to be *derived* rather than read off
@@ -612,8 +613,8 @@ Three readings, and the order is the order an operator needs them in:
 
 **Not yet priced:**
 
-- **The MI300X row.** Both inputs — the rate and the throughput — arrive in
-  weeks 9–11; the formula does not change.
+- **The MI300X row.** Both inputs — the rate and the throughput — arrive with
+  the first run on that card; the formula does not change.
 - **Headroom.** `minReplicaCount` above the mean load buys per-request TTFT (§4)
   and is paid in idle card-hours. Runs 1–3 measured one card, never a fleet, so
   this is a parameter of the scaler's configuration, not a figure.

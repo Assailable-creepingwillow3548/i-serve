@@ -271,7 +271,7 @@ differences are cosmetic:
   holding the experiment up**: it removes a mechanism that could make a
   measurement land below its floor, at the cost of nothing. Step 6 reads the hit
   rate out of the periodic log anyway, because a flag says what was asked for and
-  the log says what happened. Prefix caching is a knob for week 3, measured on
+  the log says what happened. Prefix caching gets a run of its own, measured on
   purpose against a workload that actually has shared prefixes.
 - **`--host 0.0.0.0 → 127.0.0.1`** — every client of this server runs on this
   pod. The template's `0.0.0.0` publishes an inference endpoint through RunPod's
@@ -653,7 +653,7 @@ Four flags that are easy to miss, each of which quietly ruins the measurement:
 - **`--request-rate inf` together with `--max-concurrency`** — the closed loop:
   exactly N in flight, a new one admitted when one returns. That is what pins the
   batch. Open loop (an arrival rate with no concurrency cap) is the RPS→latency
-  curve of capstone component 4, and comes later.
+  curve the load harness produces, and comes later.
 - **Length spread in the random dataset** — `--random-range-ratio`, whose meaning
   has changed across releases and is now a fraction in [0, 1) sampling uniformly
   over `[(1−r)·len, (1+r)·len]`, so **`0` is fixed length** and is what every

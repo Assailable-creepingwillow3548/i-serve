@@ -1,8 +1,8 @@
 # Observability
 
 One Prometheus, two alerting rules, one Grafana dashboard. Prometheus is here
-first as the autoscaler's input (`../keda/README.md`); weeks 7–8 added the rules
-and the dashboard on the same server. The SLO the rules and panels read is
+first as the autoscaler's input (`../keda/README.md`); the rules and the
+dashboard were added later, on the same server. The SLO the rules and panels read is
 `docs/SLO.md` §2, and which SLI, which window and which burn rate is derived in
 §4 of the same file, "The alert rule" — not restated here. How the dashboard is
 read at 03:00 is `docs/runbook.md`, "Morning triage" — not restated here either.

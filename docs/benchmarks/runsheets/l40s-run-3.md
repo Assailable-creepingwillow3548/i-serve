@@ -499,7 +499,7 @@ in each:
 - what prefix caching costs when it buys nothing, in decode-step milliseconds
   against the identical level with the feature off on the same pod.
 
-If all four land, weeks 2–3 close on **six knobs measured of six**, and
+If all four land, the L40S series closes on **six knobs measured of six**, and
 `docs/SLO.md` §6's prefix-caching section stops being the only derived-and-
 unmeasured argument in the document.
 

@@ -133,7 +133,7 @@ that appeared to show equality was sampling luck.
 ## What changes on the way to a real card
 
 - **AMD.** MI300X is `amd.com/gpu` in `limits` and a `rocm/vllm` image: two
-  fields, one more overlay. The weeks 9–11 instrument decision is
+  fields, one more overlay. The instrument that run is driven with is
   `docs/instrument-vllm-bench-sweep.md`.
 - **Weights.** Decided, and it is `base/pvc.yaml`: one RWO volume, populated
   once by the `fetch-weights` Job and mounted read-only by every replica. The

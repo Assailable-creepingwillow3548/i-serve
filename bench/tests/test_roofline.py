@@ -225,7 +225,7 @@ def test_a_full_card_lands_just_inside_the_target():
 
 
 def test_fp8_kv_doubles_the_seats_at_constant_tpot():
-    """Section 6's falsifiable prediction, and week 3 exists to break it."""
+    """Section 6's falsifiable prediction, and an FP8 KV run exists to break it."""
     fp8 = replace(QWEN3_8B, kv_dtype_bytes=1)
 
     assert close(kv_cache_tokens(fp8, MI300X, GMU), 2.12e6, 0.01e6)

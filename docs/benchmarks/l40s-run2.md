@@ -101,7 +101,7 @@ climbs monotonically over the whole sweep, 96 → 723 tok/s, and never signals
 anything. Goodput rises to **1.87 req/s** at an offered 2.5 and then falls off a
 cliff: 0.90 at 3.0, 0.12 at 4.0. Between the peak and the top of the sweep the
 card emits **1.5× more tokens** while serving **15× fewer requests inside SLO**.
-This is the sentence `docs/GLOSSARY.md` has carried since week 1, now with a
+This is the sentence `docs/GLOSSARY.md` has carried from the start, now with a
 measured collapse point on this card at this prompt length.
 
 ### The three predictions, scored

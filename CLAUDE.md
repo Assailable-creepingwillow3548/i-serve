@@ -38,7 +38,7 @@ and the other is wrong.
 ## Layout
 
 The path-by-path table is in `README.md`, with a state column. Directories map
-one-to-one onto the components the capstone is built from; keep that mapping —
+one-to-one onto the components this platform is built from; keep that mapping —
 the tree is meant to read as a map of the work.
 
 Not every directory in the working tree is part of the repository. Anything the

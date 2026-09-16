@@ -340,10 +340,10 @@ harvest count.
   mechanic 1), so it lands against a measured BF16 pool as it did on the L40S.
 - **Prefix caching and `h`** — `bench/harness.py`, never the sweep (mechanic 2).
   Table 8 has no MI300X row for the reason `bench/predictions.py` gives.
-- **The histogram SLI rule and the promote branch** (weeks 7–8, waiting for a
+- **The histogram SLI rule and the promote branch** (written, waiting for a
   card) — need the stack on Kubernetes on a GPU node, which a droplet is not.
-- **Replicas duplicating the weights read**, open since week 1 — needs the
-  8-card droplet; a decision for the plan, not this sheet.
+- **Replicas duplicating the weights read**, open since the first derivation —
+  needs the 8-card droplet, which is a separate decision, not this sheet.
 
 ---
 

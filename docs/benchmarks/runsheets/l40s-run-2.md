@@ -62,9 +62,9 @@ has, and therefore the first measured collapse point.
 argument, not by measurement. Block B prices it, and — see below — is built so
 that the *invariant* is what gets tested, not a number.
 
-**C — FP8 KV.** What this phase owes is a report comparing
+**C — FP8 KV.** What is owed here is a report comparing
 **two configurations**, BF16 KV against FP8 KV, and run 1 compared none. Without
-this block the phase cannot meet its own Done criterion, whatever else the run
+this block nothing in the series answers that comparison, whatever else the run
 measures.
 
 **The order is forced by what each block disturbs.** A runs on the default
@@ -110,8 +110,8 @@ Four consequences, all improvements:
 **Network volume: 25 GB, attached at deploy** (it cannot be added later), and
 **kept when the pod is terminated.** Run 1 deleted it and paid ~10 min of GPU
 time re-downloading 16.4 GB. At ~$3.5/month the volume costs about $0.12 a day,
-which is a quarter of the GPU-minute it saves; it is deleted when weeks 2–3 close,
-not at the end of this run.
+which is a quarter of the GPU-minute it saves; it is deleted when the L40S runs
+are done with it, not at the end of this one.
 
 ---
 
@@ -398,8 +398,8 @@ Written now so the write-up does not overclaim later.
   shared prefixes — `--dataset-name random` has none by construction.
 - **FP8 accuracy.** Above.
 - **Decode MFU.** Still assumed at the prefill value. Harmless, still unvalidated.
-- **Replicas duplicating the weights read** — the open question from week 1. Needs two
-  replicas, which is weeks 4–6.
+- **Replicas duplicating the weights read** — open since the first derivation.
+  Needs two replicas, so it waits for the Kubernetes work.
 - **MI300X.** No coefficient measured here transfers to it, and after two runs
   that will be two cards' worth of L40S evidence and zero for AMD.
 - **Reasoning-length context.** `max_model_len` stays 9 000; `docs/SLO.md` §8 is

@@ -1,6 +1,6 @@
 # Runbook
 
-> Written in weeks 7–8, alongside the alerting rules and the dashboard. Four of
+> Written alongside the alerting rules and the dashboard. Four of
 > its five procedures exist and two have been run; the fifth is described by what
 > it must contain, so `README.md` does not promise a file that is absent.
 

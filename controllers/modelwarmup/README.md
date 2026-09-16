@@ -3,7 +3,7 @@
 This directory holds no controller, and this note is the reason. It answers two
 questions in order: **when a warm model cache is a controller's job at all**, and
 **what the controller looks like if the answer is yes**. The second question is
-the interesting one to design; the first is the one an interviewer asks, and the
+the interesting one to design; the first is the one a reviewer asks, and the
 one that decides whether any code belongs here.
 
 The pull comes from `docs/architecture.md` §4: of the terms in the autoscaling
@@ -80,7 +80,7 @@ A controller earns its place when the warm set changes without anyone asking:
   and the compile artefacts for the new configuration do not exist yet; the
   first Pod of the new version pays the full 35 s, during a canary, when the
   comparison against the old version is exactly what is being measured. The
-  procedure that will own this is `docs/runbook.md`, a stub until weeks 7–8.
+  procedure that owns this is `docs/runbook.md`, "Canary rollout".
   Pre-building the artefact for the *next* configuration
   before traffic moves is a decision made without a human, on a schedule set by
   the rollout — that is a reconcile loop.
