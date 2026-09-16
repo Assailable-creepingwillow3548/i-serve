@@ -973,6 +973,27 @@ five routing policies produced the choice: `prefix`, or one of four reasons the
 request fell back to `round_robin`. The list, and why four and not one, is
 `router/README.md` §1.
 
+**`X-Router-Upstream`** (`prefix-router`) — the response header naming the
+replica the request was sent to. Read together with `X-Router-Policy`: the
+address alone cannot distinguish a prefix hit from a turn taken.
+
+**FNV-1a** — a fast non-cryptographic hash, one XOR and one multiply per byte.
+Adequate for equality, and not for ordering without an avalanche step, which is
+why a consistent-hash ring built straight on it clusters.
+
+**`-max-body`** (`prefix-router`) — the largest request body the router will hold
+in memory in order to read a prompt from it. Past it the request is streamed
+through and routed `round_robin`: the bound on what inspecting a payload costs.
+
+**`-drain`** (`prefix-router`) — the gap between failing readiness and closing
+the listener on SIGTERM, so that whatever is in front stops sending before the
+socket goes. The same ordering the stub uses on `DRAIN_DELAY_S`.
+
+**`FlushInterval`** (Go `httputil.ReverseProxy`) — how often a proxied response
+is flushed to the client; `-1` flushes after every write. The Go counterpart of
+nginx's `proxy-buffering off`, and required for the same reason: a batched
+stream makes ITL a property of the proxy.
+
 ---
 
 ## Reasoning models
