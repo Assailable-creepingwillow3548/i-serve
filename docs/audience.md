@@ -114,7 +114,10 @@ which is the only shape in which TTFT is observable at all; readiness-first
 draining on `SIGTERM`; and, above the stub, every Kubernetes object in this
 repository behaving exactly as it would on a GPU node — ingress routing, KEDA
 scaling on queue depth, Prometheus scraping per pod, an alert moving from
-pending to firing, a canary splitting traffic at the edge.
+pending to firing, a canary splitting traffic at the edge, and — on a second
+host only — a prefix router choosing a replica by prompt and holding to it
+(`deploy/router/`). What that last one establishes is *which replica*, and
+nothing else: no TTFT, no seat count, no cache hit rate. Those need a card.
 
 **Fixtures, which mean nothing:** the stub's seat count and its simulated
 milliseconds per token (`MAX_NUM_SEQS`, `SIM_DECODE_MS` in

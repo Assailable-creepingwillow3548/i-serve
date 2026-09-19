@@ -1,0 +1,4 @@
+# The build stage compiles from source; a host binary copied in would be for
+# the wrong architecture and would silently win.
+bin/
+README.md

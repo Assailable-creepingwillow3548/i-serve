@@ -17,9 +17,9 @@ name: router
 
 on:
   push:
-    paths: ["router/**", ".github/workflows/router.yml"]
+    paths: ["router/**", "deploy/router/**", ".github/workflows/router.yml"]
   pull_request:
-    paths: ["router/**", ".github/workflows/router.yml"]
+    paths: ["router/**", "deploy/router/**", ".github/workflows/router.yml"]
   workflow_dispatch:
 
 jobs:
@@ -56,3 +56,11 @@ jobs:
       - name: the build from router/README.md
         working-directory: router
         run: go build -o bin/prefix-router .
+
+      # And the command deploy/router/README.md tells a reader to type. The
+      # image is the only way the router reaches a cluster -- a compiled binary
+      # cannot ride a ConfigMap the way the Python stub does -- so a Dockerfile
+      # that has stopped building is a component that cannot be deployed at
+      # all. Nothing is pushed anywhere; the build is the assertion.
+      - name: the image from deploy/router/README.md
+        run: docker build -t prefix-router:dev router

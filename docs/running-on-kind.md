@@ -171,3 +171,17 @@ which wait for a card is the table in `deploy/observability/README.md`, and the
 dashboard's own top panel carries the same contract. The reading order — and why
 on `kind` it runs row 3 first rather than top to bottom — is
 [runbook.md](runbook.md), "Morning triage".
+
+## The router, which is not part of the bring-up
+
+`up.sh` leaves the edge balancing `round_robin` over the stub Pods, and that is
+the whole stack. The prefix router is a separate, optional four commands on top
+— `deploy/router/README.md` §3 has them and this file does not repeat them —
+and it is separate on purpose: the router is a compiled binary, so bringing it
+up needs a Docker build and a `kind load`, and making those a prerequisite of
+the stack would cost every reader a build for a component most of them are not
+here for.
+
+What it adds when it is up is one more host on the same edge,
+`router.localhost`, in front of the same Pods. The default route is untouched,
+which is the point: two doors, one fleet, and the only difference is the policy.

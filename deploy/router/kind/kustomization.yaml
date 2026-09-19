@@ -1,0 +1,20 @@
+# The prefix router in front of the stub Pods, on kind.
+#
+# Apply with:  kubectl apply -k deploy/router/kind
+# Then fill the fleet:  deploy/router/upstreams.sh
+#
+# There is no base and no second overlay, deliberately -- ../README.md says why:
+# the replica set is a flag, and a flag is not a production shape.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: llm
+
+# Not a namespace of its own. The router is in the data path of `llm` and
+# shares its failure domain; a separate namespace would only add a DNS suffix
+# and a second RoleBinding the day the watch arrives.
+resources:
+  - upstreams-configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml

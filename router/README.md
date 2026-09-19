@@ -7,10 +7,14 @@ repository attached to a component that does not exist — run 3 measured **12.5
 seats at a prefix-cache hit rate of 0 against 37.8 at 0.8**
 ([`../docs/SLO.md`](../docs/SLO.md) §6).
 
-This directory is that component, and **it is not in the request path.** It runs
-off-cluster, in front of addresses given on a flag; §6 of `architecture.md` still
-describes the stack correctly. What is here is a binary, its tests, and the
-decisions it had to make — which is the part worth defending.
+This directory is that component: a binary, its tests, and the decisions it had
+to make — which is the part worth defending. Since 2026-09-19 it also runs **on
+`kind`, in the request path**, behind the edge and in front of the stub Pods —
+on one host, `router.localhost`, while the engine's own route keeps
+`round_robin` so the two policies can be compared over one set of Pods. What
+that took, and what it cost, is [`../deploy/router/`](../deploy/router/);
+`architecture.md` §6 records the change to the drawing. The replica set is
+still a flag, and §8 is where that is priced.
 
 ---
 
@@ -140,6 +144,12 @@ under fifty concurrent requests, and the suite runs under `-race`.
 
 ## 7. Running it, against engines this repository already has
 
+Two ways, and this section is the second of them. On a cluster — the edge in
+front, the stub Pods behind, the fleet filled from the EndpointSlice — the
+commands and what to expect are [`../deploy/router/README.md`](../deploy/router/README.md)
+§3. Below is the same binary with no cluster at all, which is still the fastest
+way to see a policy change.
+
 The tests need nothing at all:
 
     cd router
@@ -220,10 +230,19 @@ withdrawing traffic are one action — `../deploy/ingress/README.md`).
   the `timeout` half of `proxy-next-upstream` because a retried generation
   re-spends accelerator time (`../deploy/ingress/README.md`). The connection
   half is the recoverable one, and retrying it here is a second routing decision
-  that needs its own test.
-- **Where the replica set comes from.** It is a flag. A Pod watch is the
-  obvious next thing, and `setUpstreams` is already safe to call under load —
-  which is the whole reason the ring is built the way §5 says.
+  that needs its own test. What the `kind` run added is the bill for not having
+  it: with a stale fleet, every request in the departed replica's share of the
+  ring fails, and it fails slowly (`../deploy/router/README.md` §2). A retry
+  would convert those into successes at the cost of the affinity they were
+  routed for — which is the trade to write down before writing the code.
+- **Where the replica set comes from.** It is still a flag — but the flag is no
+  longer only an inelegance, it has a price, and the price was measured on
+  `kind` on 2026-09-19: a fleet grown 3 → 4 left the new replica with **none**
+  of 24 requests and raised no error anywhere, and a fleet shrunk 3 → 2 sent
+  **29 %** of requests to an address that no longer existed, permanently
+  (`../deploy/router/README.md` §1). A Pod watch is the answer, and
+  `setUpstreams` is already safe to call under load — which is the whole reason
+  the ring is built the way §5 says.
 - **Whether this should be a Gateway API endpoint picker instead.** The serving
   gateways build on the Inference Extension for exactly this decision
   (`../docs/GLOSSARY.md`, *Gateway API*), and a router that duplicates it is a

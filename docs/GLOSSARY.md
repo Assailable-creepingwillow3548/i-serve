@@ -989,6 +989,30 @@ through and routed `round_robin`: the bound on what inspecting a payload costs.
 the listener on SIGTERM, so that whatever is in front stops sending before the
 socket goes. The same ordering the stub uses on `DRAIN_DELAY_S`.
 
+**Blackhole** (of an address) — a destination that neither answers nor refuses,
+so a connection attempt to it waits out its own timeout rather than failing. A
+Pod address removed from a cluster network behaves this way, which is why a
+stale upstream costs a full dial timeout and not a refused connection.
+
+**`imagePullPolicy`** — when the kubelet fetches a container image. `Never`
+requires the image to be on the node already, which is how a locally built
+image is used without a registry, and makes a forgotten load an explicit
+`ErrImageNeverPull` rather than a stale image silently serving.
+
+**`kind load docker-image`** — copies an image from the host daemon into every
+`kind` node. The counterpart to `imagePullPolicy: Never`, and the reason a
+compiled component costs `kind` two commands that an interpreted one does not.
+
+**`scratch`** (container base image) — the empty base: the image contains only
+what is copied into it. Legal for a `CGO_ENABLED=0` Go binary, which needs no
+libc, and it removes the shell — so a container built on it cannot be exec'd
+into, and its behaviour has to be observable from outside.
+
+**`paused-replicas`** (`autoscaling.keda.sh/paused-replicas`, annotation on a
+ScaledObject) — pins the target Deployment at a replica count and stops KEDA
+acting on the metric, without deleting the ScaledObject. The supported way to
+hold a fleet still while something other than autoscaling is under examination.
+
 **`FlushInterval`** (Go `httputil.ReverseProxy`) — how often a proxied response
 is flushed to the client; `-1` flushes after every write. The Go counterpart of
 nginx's `proxy-buffering off`, and required for the same reason: a batched

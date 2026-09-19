@@ -1,0 +1,18 @@
+# The fleet, as one string, because the router takes it as one flag.
+#
+# Empty on purpose. A fresh apply leaves the router in CrashLoopBackOff with
+# `-upstreams is required` in its log, which is the Pod saying it does not know
+# what the fleet is -- the honest state, and better than starting with a stale
+# list. ../upstreams.sh fills it from the EndpointSlice and restarts the Pod.
+#
+# A plain ConfigMap and not a configMapGenerator: a generated name carries a
+# content hash, and a hash is exactly what a script updating this value in
+# place cannot address.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: router-upstreams
+  labels:
+    app.kubernetes.io/name: prefix-router
+data:
+  upstreams: ""

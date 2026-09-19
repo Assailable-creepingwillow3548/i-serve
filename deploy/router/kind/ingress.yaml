@@ -1,0 +1,47 @@
+# The router's route in, and it is a *second* route rather than a replacement.
+#
+# `../../manifests/base/ingress.yaml` keeps `/v1` with no host, so the default
+# server still goes edge -> Service -> round_robin over Pods. This one adds a
+# named server that goes edge -> router -> Pod address. Two hosts, one cluster,
+# one set of engine Pods, and the only difference between them is the policy:
+# that is the comparison, and repointing the existing route would have thrown
+# it away. It would also have broken the canary overlay, which splits that same
+# `/v1` by weight (`../../manifests/overlays/kind-canary/`).
+#
+# The base file anticipated this: "a hostname is added here when a second
+# service shares the edge". One does now.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prefix-router
+  labels:
+    app.kubernetes.io/name: prefix-router
+  annotations:
+    # The same three numbers as the engine's route, for the same three reasons,
+    # which are argued once in ../../manifests/base/ingress.yaml and not again
+    # here. They matter more on this route, not less: the router's whole claim
+    # about TPOT is that it does not buffer (`FlushInterval: -1`), and an edge
+    # that buffers in front of it would hide both the claim and its failure.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "480"
+    nginx.ingress.kubernetes.io/proxy-next-upstream: "error"
+spec:
+  ingressClassName: nginx
+  rules:
+    # A name that needs no /etc/hosts entry and no DNS: everything under
+    # `.localhost` resolves to the loopback address by convention, and the
+    # request is matched on the Host header by nginx, not by where it lands.
+    - host: router.localhost
+      http:
+        paths:
+          # `/v1` only, exactly as the engine's route: the omissions there are
+          # decisions, and forwarding /metrics or /health through a second door
+          # would undo them. The router forwards every path it is given, so the
+          # narrowing has to happen here.
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: prefix-router
+                port:
+                  name: http

@@ -23,6 +23,7 @@ number is traceable to the run or the derivation that produced it.
 | `docs/accelerator-landscape.md` | the accelerator market: vendors, their attack surface on the decode equation, and the freshness of each claim |
 | `docs/architecture.md` | the request path from ingress to GPU |
 | `docs/running-on-kind.md` | bringing the stack up on `kind`: the eleven commands, the two load-bearing waits, the stub contract |
+| `deploy/router/README.md` | the prefix router on `kind`: how it is brought up, and what a start-up flag for the replica set costs when the fleet moves |
 | `docs/runbook.md` | canary rollout, OOM handling, morning triage |
 | `docs/benchmarks/` | measured results; predicted-vs-measured tables |
 | `docs/benchmarks/runsheets/` | per-run checklists: the commands and the predicted numbers a run must face, written before GPU money is spent |

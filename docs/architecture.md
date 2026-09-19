@@ -264,15 +264,24 @@ figure is never reported as a measurement ([SLO.md](SLO.md) §9).
 - **A GPU.** The whole path above has run only on `kind` against the stub. Every
   performance figure quoted here was measured on a rented L40S in a different
   setting, one server at a time and no Kubernetes involved.
-- **Inference-aware routing.** The edge balances `round_robin` over Pod
-  addresses, which for this traffic is close to the worst available policy:
-  request cost varies by orders of magnitude, and sending a request to the
-  replica that already holds its prefix is worth more than any balance — run 3
-  measured 12.5 seats against 37.8 at a hit rate of 0.8 ([SLO.md](SLO.md) §6).
-  Fixing it is a Gateway API step and not an annotation
-  (`deploy/ingress/README.md`). A standalone router that makes the decision is
-  written and tested in `router/`, and is deliberately **not** in this path:
-  nothing in this drawing routes on cache locality.
+- **Inference-aware routing — on the route drawn above.** The edge balances
+  `round_robin` over Pod addresses, which for this traffic is close to the
+  worst available policy: request cost varies by orders of magnitude, and
+  sending a request to the replica that already holds its prefix is worth more
+  than any balance — run 3 measured 12.5 seats against 37.8 at a hit rate of
+  0.8 ([SLO.md](SLO.md) §6). Fixing it properly is a Gateway API step and not
+  an annotation (`deploy/ingress/README.md`).
+
+  Since 2026-09-19 there is a **second route** on `kind` that does route on
+  cache locality: the host `router.localhost` goes edge → `prefix-router` →
+  Pod address, over the same engine Pods (`router/`, `deploy/router/`). It is
+  not in the drawing on purpose — the drawing is the default server's path and
+  has to stay redrawable from memory — and it is not the default: the route
+  above is still what an unadorned request gets, which is what makes the two
+  comparable at all. What the second route has established is *routing*
+  behaviour only. It has produced no TTFT and no seat number, and may not:
+  those need a card and a prediction written first
+  ([adding-a-run.md](adding-a-run.md)).
 - **Fixture numbers, which may not be quoted.** The `kind` overlays carry
   `MAX_NUM_SEQS: "4"`, `SIM_DECODE_MS: "20"` and `threshold: "2"` so a laptop can
   push a queue over a ceiling inside a session. The derived values are in

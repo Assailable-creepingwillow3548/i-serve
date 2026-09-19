@@ -1,0 +1,22 @@
+# The stable name in front of the router Pod.
+#
+# Note what it is *not* in front of: the engine Pods. `vllm`'s own Service
+# still exists and still balances by turn -- this Service is how the edge
+# reaches the router, and the router reaches the engine Pods by address,
+# bypassing kube-proxy entirely. A router behind a ClusterIP that then dialled
+# another ClusterIP would have its decision undone one hop later.
+apiVersion: v1
+kind: Service
+metadata:
+  name: prefix-router
+  labels:
+    app.kubernetes.io/name: prefix-router
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: prefix-router
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP

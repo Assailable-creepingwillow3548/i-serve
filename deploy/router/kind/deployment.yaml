@@ -1,0 +1,103 @@
+# One router Pod, in front of the stub Pods the same cluster already runs.
+#
+# One, and not two: each replica bounds load by *its own* in-flight count
+# (../../../router/README.md §4), so two routers each see half the traffic and
+# each compute a fleet mean from half of it. Two would be a second thing to
+# reason about before the first one has been measured at all.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prefix-router
+  labels:
+    app.kubernetes.io/name: prefix-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prefix-router
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prefix-router
+    spec:
+      # Longer than -drain plus the longest generation in flight. The stub's
+      # completions are milliseconds; on a card this number is the engine's,
+      # not the router's, and it belongs with the Deployment that owns it.
+      terminationGracePeriodSeconds: 60
+
+      containers:
+        - name: prefix-router
+          # Built from ../../../router/Dockerfile and pushed into the node with
+          # `kind load docker-image`, not pulled: there is no registry in this
+          # story. Never rather than IfNotPresent, so a forgotten `kind load`
+          # fails as ErrImageNeverPull instead of silently running whatever an
+          # earlier load left behind.
+          image: prefix-router:dev
+          imagePullPolicy: Never
+
+          # $(UPSTREAMS) is expanded by the kubelet from the env below, so the
+          # flag the binary sees is the one the ConfigMap holds. Everything
+          # else is the binary's own default and is left unset on purpose:
+          # a flag repeated here is a second place to change it.
+          args:
+            - -listen=:8080
+            - -upstreams=$(UPSTREAMS)
+          env:
+            - name: UPSTREAMS
+              valueFrom:
+                configMapKeyRef:
+                  name: router-upstreams
+                  key: upstreams
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # Both probes read the router's own path, which is reserved so no
+          # engine route can collide with it (../../../router/main.go).
+          #
+          # Readiness is fast because it is half of the drain: on SIGTERM the
+          # router fails this endpoint, waits -drain (5 s), and only then stops
+          # accepting. 2 s x 2 withdraws the endpoint inside that window, which
+          # is what makes the wait long enough rather than merely polite.
+          readinessProbe:
+            httpGet:
+              path: /-/healthz
+              port: http
+            periodSeconds: 2
+            failureThreshold: 2
+
+          # Slower to fire than readiness, for the same reason as the engine's
+          # (../../manifests/base/deployment.yaml): take a wedged process out
+          # of rotation first, kill it only after. 10 s x 3 also clears the
+          # drain window, so a Pod shutting down is never restarted mid-drain.
+          livenessProbe:
+            httpGet:
+              path: /-/healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              # The router holds one prompt per in-flight request while it
+              # chooses (-max-body, 1 MiB each). 128 Mi is room for far more
+              # concurrency than the stub's four seats can produce; on a card
+              # this limit is derived from max_num_seqs, not guessed.
+              memory: 128Mi
+
+          securityContext:
+            # A scratch image has no /etc/passwd, so the user is a number.
+            # 65532 is the conventional `nonroot` uid; nothing in the image
+            # depends on it, because nothing in the image reads a file.
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
