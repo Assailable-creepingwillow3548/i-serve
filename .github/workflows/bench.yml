@@ -143,7 +143,7 @@ jobs:
           # git grep, not grep: the same tool the hook uses, and the one whose
           # -P is always in UTF mode, so \x{0400} means what it says.
           if git grep -lIP "[\x{0400}-\x{04FF}]" -- \
-               bench controllers deploy docs site .github .githooks \
+               bench controllers deploy docs router site .github .githooks \
                README.md CONTRIBUTING.md LICENSE CLAUDE.md up.sh down.sh; then
             echo
             echo "CONTRIBUTING.md, 'What a reviewer enforces': repository content"
