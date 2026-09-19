@@ -26,8 +26,6 @@ prefix would be an approximate independent variable.
 **No retries.** A load generator that retries measures its own retry policy. A
 failed request is recorded as a failure and counted; it never becomes a second
 arrival, because that would deform the arrival process the run is built on.
-
-    python3 bench/loadgen.py --help   # a smoke test against a live server
 """
 
 import asyncio
