@@ -1188,6 +1188,12 @@ Same API shape, different host, different contract ($1.99/h against $2.59/h for
 the same MI300X), and plan slugs with a `-devcloud` suffix. A token issued by
 that console is valid only against that host. MI300X region: ATL1.
 
+**Account credit** (DigitalOcean) — a balance applied to the *next invoice*
+rather than a prepaid wallet: usage bills as normal and the credit settles the
+bill afterwards, so the account still needs a payment method. It carries an
+expiry date and does not apply to **Add-Ons** — paid extras billed beside a
+resource; a GPU Droplet is not one.
+
 **Slug** (size slug, image slug, region slug) — the string the API accepts for a
 plan (`gpu-mi300x1-192gb`), a base image (`gpu-amd-base`) or a datacenter
 (`atl1`). Read from the API — `doctl compute size list`, `image list` — never

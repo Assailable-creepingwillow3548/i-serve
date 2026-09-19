@@ -11,10 +11,10 @@ output "ssh" {
 output "price_hourly" {
   description = <<-EOT
     The hourly price the API reports for this droplet. $1.99/h is the figure
-    under the AMD credits (read from the console at activation); $2.59/h is the
-    same card on a paid DigitalOcean account. A figure other than the one the
-    run was priced at means a different contract or plan, and the run stops
-    there.
+    under the AMD credits (read from the console when the droplet is created);
+    $2.59/h is the same card on a paid DigitalOcean account. A figure other
+    than the one the run was priced at means a different contract or plan, and
+    the run stops there.
   EOT
   value       = digitalocean_droplet.gpu.price_hourly
 }

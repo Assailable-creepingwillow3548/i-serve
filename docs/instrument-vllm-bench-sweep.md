@@ -7,9 +7,9 @@ in `l40s-first-run-card.md` §4 and `l40s-run-2-card.md`, then
 considered. The miss was found by reading the engine's own documentation, not
 this repository. Checking an instrument against its own documentation before
 committing a run to it is the step that was skipped when runs 1–3 were planned. The MI300X
-credit window is 30 days from activation and its rule is that hours go into runs
-rather than into debugging, so the instrument decision is made here, before the
-credits are activated.
+credit window is short and fixed (`docs/benchmarks/runsheets/mi300x-run-1.md`),
+and its rule is that hours go into runs rather than into debugging, so the
+instrument decision is made here, off-card and before a credit is spent.
 
 Written 2026-08-31 against the documentation for **`v0.27.1`**, the tag runs 1–3
 used; verified off-card 2026-09-04 against the source of that tag and against
@@ -80,9 +80,9 @@ Seven mechanics decide every question below:
 - **Repetition.** `--num-runs 3` is free here, and reproducibility across
   identical launches was a whole block of run 2 (§6).
 - **Machine-shaped output and `--resume`.** Run 2's numbers were transcribed into
-  a `levels.tsv` by hand (`bench/measured_run3.py`); inside a 30-day window with
-  a hard budget, a resumable sweep that writes its own JSON is worth more than
-  the transcription discipline it replaces.
+  a `levels.tsv` by hand (`bench/measured_run3.py`); inside a short credit
+  window with a hard budget, a resumable sweep that writes its own JSON is
+  worth more than the transcription discipline it replaces.
 - **`plot_pareto`.** Tokens/s/user against tokens/s/GPU is the seats-against-
   latency frontier this repository has been drawing by hand.
 

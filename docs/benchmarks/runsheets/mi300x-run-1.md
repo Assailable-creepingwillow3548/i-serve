@@ -16,7 +16,7 @@ to the launch line (`--server-ready-timeout`) and one to a formula (the `eff_mem
 read). Still open until the day: the console price, whether `hf` is on the ROCm
 image, the attention backend, and how long a cold launch takes on ROCm.
 
-Written 2026-09-04, before the credits are activated and therefore before any
+Written 2026-09-04, before the credits were activated and therefore before any
 card exists — which is the point. **Every predicted figure below comes from
 `bench/predictions.py` tables 9 and 10**, added the same day; re-run it if the
 module has changed since. Where this sheet disagrees with a measured number,
@@ -30,11 +30,17 @@ the day are
 `vllm bench sweep serve --help=all` and the server's startup log.
 
 **Cost, flagged up front.** AMD Developer Cloud, 1 × MI300X at **$1.99/h**
-(Phoronix's review of the service, 2025; the console price at activation wins
-and is written here when read). The $100 of credits are **~50 h**, and the
-window is **30 days from activation**. Session budget **≤ 2.5 h ≈ $5**, hard
-stop; expected clock ≈ 1.5 h (§5). Two facts that set the shape of the day,
-both checked 2026-09-04 and neither in the repository before:
+(Phoronix's review of the service, 2025; the console price at droplet creation
+wins and is written here when read). The $100 of credits are **~50 h** behind a
+**short, fixed expiry** — a date on the calendar, not a budget that can be
+spread — and that is the whole reason this sheet, the harness and the drop
+order are final before a droplet exists: the hours go into the run, not into
+debugging. The credit is DigitalOcean account credit applied to the next
+invoice and, per the console, **not to Add-Ons**; a GPU droplet is not an
+Add-On, so the run is covered, but the account needs a payment method for the
+invoice the credit then settles. Session budget **≤ 2.5 h ≈ $5**, hard stop;
+expected clock ≈ 1.5 h (§5). Two facts that set the shape of the day, both
+checked 2026-09-04 and neither in the repository before:
 
 - **The service is DigitalOcean GPU Droplets under an AMD front door.** The same
   card is $2.59/h on DigitalOcean's own price list — a different contract, not
@@ -67,9 +73,12 @@ Nothing numerical transfers; three shapes do, and each is a prediction here.
 - [x] `bench/sweep/dry-run.sh mi300x-run-1-serve.json mi300x-run-1-bench.json`
       — 36 benchmark commands, one server launch, exit 0 (2026-09-04).
 - [x] `python3 bench/predictions.py` — tables 9 and 10 open beside the terminal.
-- [ ] **Activation is the last thing before the droplet**, not a preparatory
-      step: the 30 days start then. Activate on the morning of this run, with
-      this sheet and the harness already final.
+- [x] **Activation is not a lever.** This sheet was written expecting to start
+      the window itself, on the morning of the run. The credits arrived already
+      active, so the expiry is a date the run has to land *before* rather than
+      one it chooses — the operator tracks the date. What it changes here is
+      nothing, because §0 already said it: the sheet and the harness are final
+      before the droplet.
 - [ ] Read the hourly price off the console and write it into the header above.
 - [ ] SSH key registered with the service before the droplet is created.
 - [ ] **Image: Vanilla ROCm**, not a Quick Start image. The Quick Start images
