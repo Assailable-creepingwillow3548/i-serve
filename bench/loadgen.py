@@ -1,31 +1,13 @@
 """Load generation against an OpenAI-compatible server: arrivals, SSE, timings.
 
-The I/O half of the load harness. It
-knows how to put requests on a socket and how to timestamp what comes back; it
-knows nothing about what the numbers mean. Aggregation is bench/stats.py, the
-engine's own counters are bench/vllm_metrics.py, and what to run is
-bench/scenarios/. Four files because they change for four different reasons --
-the same split roofline.py and predictions.py already use.
-
-Three decisions worth stating, because each one is a trade this module made and
-a later reader would otherwise have to re-derive.
-
-**Standard library only.** No aiohttp, no httpx, no numpy: the harness has to run
-inside the vllm/vllm-openai image on a rented pod, where adding a dependency
-costs GPU-minutes and can pull a different version of something the server
-depends on. The cost is the ~60 lines of HTTP/1.1 and chunked-transfer parsing
-below, which is a fair price for "it runs wherever python does".
-
-**Prompts are sent as token IDs, not text.** /v1/completions accepts a list of
-ints for `prompt`, and that removes the tokenizer from the measurement entirely:
-prompt length is exact rather than approximate, and a shared prefix is shared
-*by construction* rather than by hoping two strings tokenise the same way. Since
-the whole point of run 3 is a controlled prefix cache hit rate, an approximate
-prefix would be an approximate independent variable.
-
-**No retries.** A load generator that retries measures its own retry policy. A
-failed request is recorded as a failure and counted; it never becomes a second
-arrival, because that would deform the arrival process the run is built on.
+The I/O half of the load harness: it puts requests on a socket and timestamps
+what comes back, and knows nothing about what the numbers mean. Aggregation is
+bench/stats.py, the engine's counters bench/vllm_metrics.py, what to run
+bench/scenarios/. Three decisions this module made: standard library only, so
+it runs inside the vllm-openai image without adding a dependency; prompts are
+sent as token IDs, so prompt length and a shared prefix are exact by
+construction (docs/GLOSSARY.md); no retries, because a retry would be a second
+arrival and deform the arrival process.
 """
 
 import asyncio
@@ -39,9 +21,8 @@ from dataclasses import dataclass, field
 class Endpoint:
     """Where the server is, and how patient the client is with it.
 
-    timeout is per request and deliberately large: a request that is queued
-    behind 40 others is *late*, which is a measurement, not an error. Cutting it
-    off early would turn the tail this run exists to see into a missing value.
+    timeout is per request and large on purpose: a request queued behind 40
+    others is late, which is a measurement, not an error.
     """
 
     host: str = "127.0.0.1"
@@ -56,9 +37,8 @@ class Endpoint:
 class Request:
     """One prompt, already tokenised, with the shape that produced it.
 
-    prefix_tokens is carried alongside the ids because the harness has to be able
-    to state the *nominal* hit rate without re-inspecting the prompt: it is the
-    number the measured h from the engine's counters is scored against.
+    prefix_tokens is carried so the nominal hit rate can be stated without
+    re-inspecting the prompt; the engine's measured h is scored against it.
     """
 
     index: int
@@ -75,20 +55,12 @@ class Request:
 class Record:
     """One request's timings, as the client saw them.
 
-    Times are seconds from a monotonic clock (time.perf_counter), converted for
-    display only -- this repository keeps SI base units, and that applies to a
-    measurement as much as to a derivation.
-
-    `sent` is the instant the bytes reached the socket, and every latency below
-    is measured from it. The connection is opened *before* that instant on
-    purpose: TCP setup against a pod on the same host is under a millisecond, but
-    it is not the service's latency, and TTFT here has to stay comparable to
-    what `vllm bench serve` reports.
-
-    `scheduled - sent` is the harness's own lateness. It is recorded rather than
-    asserted away: an open-loop generator that cannot keep up with its own
-    arrival process silently becomes a closed loop, which is precisely the defect
-    docs/GLOSSARY.md warns about, and the only way to notice is to measure it.
+    Seconds from time.perf_counter, converted for display only. `sent` is when
+    the bytes reached the socket; the connection is opened before it, so TTFT
+    excludes TCP setup and stays comparable to `vllm bench serve`.
+    `scheduled - sent` is the harness's own lateness, recorded rather than
+    asserted away: an open loop that cannot keep up silently becomes a closed
+    one (docs/GLOSSARY.md), and only a measurement shows it.
     """
 
     index: int
@@ -101,10 +73,8 @@ class Record:
     output_tokens: int = 0
     usage_output_tokens: int | None = None
     error: str | None = None
-    # X-Router-Policy, when something in front of the engine set it. None means
-    # nothing did, which is the ordinary case of loading an engine directly --
-    # not a failed read. What it is for: a request routed by prefix and a
-    # request that fell back look identical in every other field here.
+    # X-Router-Policy, if something in front of the engine set it (docs/GLOSSARY.md).
+    # None is the ordinary case of loading an engine directly, not a failed read.
     policy: str | None = None
 
     @property
@@ -117,11 +87,10 @@ class Record:
 
     @property
     def tpot(self) -> float | None:
-        """Mean ITL of this request -- the SLO quantity (docs/GLOSSARY.md).
+        """Mean ITL of this request, the SLO quantity (docs/GLOSSARY.md).
 
-        Undefined for a single-token response: with one token there is no gap to
-        average, and returning 0 or the TTFT would both be a lie that percentiles
-        would then smooth into plausibility.
+        None for a single-token response: there is no gap to average, and 0 or
+        the TTFT would be a lie that percentiles smooth into plausibility.
         """
         if not self.ok or self.latency is None or self.output_tokens < 2:
             return None
@@ -154,10 +123,8 @@ async def _read_headers(reader: asyncio.StreamReader) -> tuple[int, dict[str, st
 async def _iter_body(reader: asyncio.StreamReader, headers: dict[str, str]):
     """Yield raw body bytes as they arrive, unwrapping chunked framing.
 
-    vLLM streams SSE with Transfer-Encoding: chunked, so the chunk sizes have to
-    be consumed or every event arrives with a hex length glued to its front. The
-    non-chunked branch exists for the test server and for error responses, which
-    come back with a Content-Length and no stream at all.
+    vLLM streams SSE chunked; the Content-Length branch serves the test server
+    and error responses.
     """
     if headers.get("transfer-encoding", "").lower() == "chunked":
         while True:
@@ -189,10 +156,8 @@ async def _iter_body(reader: asyncio.StreamReader, headers: dict[str, str]):
 def _build_http_request(ep: Endpoint, req: Request) -> bytes:
     """The wire format, assembled by hand because there is no client library.
 
-    ignore_eos is the load-testing flag that makes output length an *input*:
-    without it the model stops where it likes and every level measures a
-    different number of decode steps. temperature 0 for the same reason -- a run
-    that is comparing configurations should not also be sampling.
+    ignore_eos makes output length an input (docs/GLOSSARY.md); temperature 0
+    because a run comparing configurations should not also be sampling.
     """
     body = json.dumps({
         "model": ep.model,
@@ -210,9 +175,7 @@ def _build_http_request(ep: Endpoint, req: Request) -> bytes:
         f"Host: {ep.host}:{ep.port}",
         "Content-Type: application/json",
         "Accept: text/event-stream",
-        # One connection per request, closed by the server when the stream ends.
-        # Keep-alive would save a handshake and cost the ability to reason about
-        # a stalled socket, which is the failure this harness has to survive.
+        # One connection per request: keep-alive would hide a stalled socket.
         "Connection: close",
         f"Content-Length: {len(body)}",
     ]
@@ -225,11 +188,9 @@ def _build_http_request(ep: Endpoint, req: Request) -> bytes:
 async def send_one(ep: Endpoint, req: Request, scheduled: float) -> Record:
     """Send one request, timestamping every token event that comes back.
 
-    An SSE chunk can carry more than one event when the server batches its
-    writes; the events in it then share a timestamp and one of the ITLs reads
-    zero. That is a property of any streaming client, `vllm bench serve`
-    included -- it is why the *median* ITL is the decode-step proxy and the mean
-    is not (docs/GLOSSARY.md).
+    One SSE chunk can carry several events; they share a timestamp and one ITL
+    reads zero, which is why the median ITL is the decode-step proxy
+    (docs/GLOSSARY.md).
     """
     rec = Record(index=req.index, prompt_tokens=req.prompt_tokens, scheduled=scheduled)
     writer = None
@@ -269,8 +230,7 @@ async def send_one(ep: Endpoint, req: Request, scheduled: float) -> Record:
 
                 choices = event.get("choices") or []
                 if not choices or not choices[0].get("text"):
-                    # A usage-only frame, or a finish frame with no text: it is
-                    # not a token, so it must not become an ITL sample.
+                    # A usage-only or finish frame is not a token, so not an ITL sample.
                     continue
 
                 if rec.ttft is None:
@@ -304,14 +264,9 @@ async def send_one(ep: Endpoint, req: Request, scheduled: float) -> Record:
 def poisson_offsets(rate: float, count: int, seed: int) -> list[float]:
     """Arrival offsets in seconds for a Poisson process of the given rate.
 
-    Exponential gaps, which is what makes the process Poisson and what makes the
-    tail worth measuring: a constant-interval generator at the same mean rate
-    never produces the coincident arrivals that build a queue, and run 2 found
-    the TTFT p99 breaking at a third of the rate the steady-state arithmetic
-    predicted (docs/benchmarks/l40s-run2.md section 3).
-
-    Seeded, because a run that cannot be repeated cannot be re-faced with a
-    changed configuration -- the same reason coefficients are pinned to a run.
+    Exponential gaps: constant intervals never produce the coincident arrivals
+    that build a queue (docs/benchmarks/l40s-run2.md section 3). Seeded, so a
+    level can be re-faced with a changed configuration.
     """
     if rate <= 0:
         raise ValueError("a Poisson arrival rate must be positive")
@@ -328,14 +283,9 @@ async def run_open_loop(
         seed: int = 0, max_in_flight: int | None = None) -> tuple[list[Record], float]:
     """Fire requests at wall-clock arrival times, regardless of what is finished.
 
-    This is the mode in which TTFT means anything: the queue that forms is the
-    *service's*, so the number can be compared with a target. The closed-loop
-    sibling below cannot answer that question at all (docs/SLO.md section 9).
-
-    max_in_flight is a safety valve, not a load parameter. If it ever engages the
-    generator has stopped being open-loop, so it is reported rather than
-    absorbed: the caller sees the deferred count and treats the level's TTFT the
-    way it treats a closed loop's.
+    The only mode in which TTFT is the service's (docs/SLO.md section 9).
+    max_in_flight is a safety valve, not a load parameter: once it engages the
+    loop is no longer open, so the deferred count is reported, not absorbed.
     """
     offsets = poisson_offsets(rate, len(requests), seed)
     gate = asyncio.Semaphore(max_in_flight) if max_in_flight else None
@@ -364,11 +314,9 @@ async def run_closed_loop(
         concurrency: int) -> tuple[list[Record], float]:
     """Hold exactly `concurrency` requests in flight until the list is exhausted.
 
-    The mode that measures the *engine*: a fixed batch size is the independent
-    variable of every decode-step and seat-count question, which is what run 1
-    and the concurrency sweeps of run 2 needed. Its TTFT is the generator's own
-    backlog and is not a service metric -- bench/stats.py carries that flag
-    forward so a table cannot quietly print it against a 300 ms target.
+    The mode that measures the engine: batch size is the independent variable.
+    Its TTFT is the generator's own backlog, not a service metric, and
+    bench/stats.py carries that flag so a table cannot print it against a target.
     """
     if concurrency < 1:
         raise ValueError("closed-loop concurrency must be at least 1")
@@ -384,8 +332,7 @@ async def run_closed_loop(
                 req = queue.get_nowait()
             except asyncio.QueueEmpty:
                 return
-            # scheduled == sent by definition here: in a closed loop the arrival
-            # *is* the completion of the previous request on this worker.
+            # scheduled == sent: in a closed loop the arrival is the previous completion.
             records.append(await send_one(ep, req, time.perf_counter()))
 
     await asyncio.gather(*(worker() for _ in range(concurrency)))

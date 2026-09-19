@@ -1,25 +1,11 @@
 """Aggregation of one level's records into the numbers a run reports.
 
-Pure functions over the Records that bench/loadgen.py produces: no sockets, no
-clock, no files. That is what makes the arithmetic testable on a laptop, with no
-card and no server, and what keeps a change to the HTTP client from touching the
-definition of TPOT.
-
-Every metric here is defined in docs/GLOSSARY.md and computed the way
-`vllm bench serve` computes it, deliberately: this repository already holds 22
-levels measured with that tool, and a harness whose TPOT means something
-slightly different would silently break every comparison with run 1 and run 2.
-The three definitions that matter, restated so the code can be checked against
-them without opening another file:
-
-  TPOT        mean ITL *of one request*, undefined below two output tokens
-  median ITL  the median over all inter-token gaps of all requests, pooled
-  goodput     completed requests meeting *every* stated threshold, per second
-
-The one thing this module adds to that tool's output is a validity flag. A
-number that cannot legally be compared to a target -- a TTFT from a closed loop,
-a TTFT below the prefill floor -- is marked at the point where it is computed,
-not in the prose of a write-up later.
+Pure functions over bench/loadgen.py's Records: no sockets, clock or files, so
+the arithmetic is testable without a card. Every metric is defined in
+docs/GLOSSARY.md and computed as `vllm bench serve` computes it, so levels
+from this harness compare with the earlier runs. What this module adds is a
+validity flag: a number that cannot legally face a target -- a closed loop's
+TTFT, a TTFT below the prefill floor -- is marked where it is computed.
 """
 
 import math
@@ -29,13 +15,11 @@ from loadgen import Record
 
 
 def percentile(values: list[float], q: float) -> float:
-    """Linear-interpolated percentile, matching numpy's default `linear` method.
+    """Linear-interpolated percentile, matching numpy's default method.
 
-    Written out rather than imported because numpy is not installed on the pod
-    and this is nine lines. Matching numpy is not vanity: run 1 and run 2's
-    figures came from `vllm bench serve`, which uses np.percentile, and a
-    harness that used the nearest-rank convention instead would differ from them
-    by one sample at exactly the tail percentiles the SLO is written against.
+    Written out because numpy is not on the pod. Matching numpy matters: the
+    earlier runs came from `vllm bench serve`, which uses np.percentile, and a
+    nearest-rank convention differs by one sample at exactly the SLO tails.
     """
     if not values:
         return math.nan
@@ -52,11 +36,10 @@ def percentile(values: list[float], q: float) -> float:
 
 @dataclass(frozen=True)
 class SLOTargets:
-    """The promise a level is scored against, in seconds (SI, per section 7).
+    """The promise a level is scored against, in seconds.
 
-    Defaults are the interactive class of docs/SLO.md section 2. The batch class
-    is a different pair of numbers against the same code, which is the whole
-    reason this is an argument rather than a constant.
+    Defaults are the interactive class (docs/SLO.md section 2); the batch class
+    is another pair against the same code, hence an argument, not a constant.
     """
 
     ttft: float = 0.300
@@ -69,9 +52,7 @@ class SLOTargets:
         if rec.ttft > self.ttft:
             return False
         tpot = rec.tpot
-        # A single-token response has no TPOT to breach. It counts as good if it
-        # met TTFT: refusing to count it would let a level's goodput fall for a
-        # reason no user could perceive.
+        # A single-token response has no TPOT to breach; it is good if TTFT was.
         if tpot is not None and tpot > self.tpot:
             return False
         if self.e2el is not None and rec.latency > self.e2el:
@@ -82,10 +63,8 @@ class SLOTargets:
 def max_concurrent(records: list[Record]) -> int:
     """The largest number of requests in flight at once, by a sweep line.
 
-    Reported because in an open-loop run it is an *output*: it is how deep the
-    server actually let the queue get, and comparing it with the engine's own
-    num_requests_running is the cheapest check that client and server agree on
-    what was happening.
+    An output in an open-loop run: how deep the server let the queue get,
+    checked against the engine's own num_requests_running.
     """
     events: list[tuple[float, int]] = []
     for rec in records:
@@ -105,9 +84,8 @@ def max_concurrent(records: list[Record]) -> int:
 class LevelStats:
     """One benchmark level, aggregated. Field names mirror `vllm bench serve`.
 
-    Times are seconds here and converted to milliseconds only in as_vllm_json,
-    which exists so a level of this harness can be read by the same eyes and the
-    same loaders as docs/benchmarks/raw/l40s-2026-08-23/machine/*.json.
+    Seconds here; milliseconds only in as_vllm_json, so a level reads like
+    docs/benchmarks/raw/l40s-2026-08-23/machine/*.json.
     """
 
     label: str
@@ -136,21 +114,16 @@ class LevelStats:
 
     @property
     def prefill_interference(self) -> float:
-        """TPOT p50 minus median ITL: the quantity SLO.md section 6 extrapolates.
-
-        Not a derived convenience -- it is the independent variable of
-        seats_under_prefill_interference(), so it is computed here once rather
-        than by every caller that wants to fit the line again.
+        """TPOT p50 minus median ITL, the independent variable of
+        seats_under_prefill_interference() (SLO.md section 6).
         """
         return self.tpot["p50"] - self.itl["p50"]
 
     @property
     def tpot_over_median_itl(self) -> float:
-        """How *unevenly* prefill is spread, not how much of it there is.
+        """How unevenly prefill is spread, not how much of it there is.
 
-        Run 1 read this ratio as the amount of interference and run 2 corrected
-        it: it collapses to 1.0 once prefill lands in nearly every step, which is
-        also the point where the median stops being a decode step at all
+        Collapses to 1.0 once prefill lands in nearly every step
         (docs/benchmarks/l40s-run2.md section 6).
         """
         return self.tpot["p50"] / self.itl["p50"] if self.itl["p50"] > 0 else math.inf
@@ -172,9 +145,8 @@ def summarize(
         targets: SLOTargets) -> LevelStats:
     """Turn one level's records into its row of the report.
 
-    Failures are counted, never dropped silently and never retried upstream: a
-    level where 5 of 60 requests failed is a different fact from a level of 55
-    requests, and only the count keeps the two apart.
+    Failures are counted, never dropped: 5 of 60 failed is a different fact
+    from a level of 55.
     """
     ok = [r for r in records if r.ok and r.latency is not None]
     failed = [r for r in records if not r.ok]
@@ -192,10 +164,8 @@ def summarize(
     warnings: list[str] = []
 
     if mode == "closed":
-        # docs/GLOSSARY.md, closed loop: the queue this TTFT measures belongs to
-        # the generator, so the number may never be compared with a target. It is
-        # still computed -- it is a useful *relative* figure between levels of the
-        # same shape -- but it leaves this function already labelled.
+        # A closed loop's TTFT is the generator's queue (docs/GLOSSARY.md): kept
+        # as a relative figure between levels, but labelled before it leaves.
         invalid.append("ttft-not-a-service-metric: closed loop")
 
     if failed:
@@ -203,9 +173,8 @@ def summarize(
 
     max_lateness = max((r.lateness for r in records), default=0.0)
     if mode != "closed" and max_lateness > 0.050:
-        # The generator fell behind its own arrival process by more than a
-        # decode step's worth of time, so the level is drifting toward a closed
-        # loop and its TTFT is partly the harness's.
+        # More than a decode step behind its own arrivals: drifting toward a
+        # closed loop, so part of this TTFT is the harness's.
         warnings.append(f"generator lateness up to {max_lateness * 1e3:.0f} ms")
 
     return LevelStats(
@@ -236,10 +205,8 @@ def with_flag(stats: LevelStats, *, invalid: str = "", warning: str = "",
               extra: dict[str, float] | None = None) -> LevelStats:
     """Return the level with one more flag or a few more fields attached.
 
-    LevelStats is frozen because a measurement should not be edited after the
-    fact; a check that runs later (the prefill floor, the hit rate, the KV pool
-    gate) therefore produces a *new* level rather than mutating one. The
-    provenance stays visible in the code that did it.
+    LevelStats is frozen: a later check (prefill floor, hit rate, pool gate)
+    produces a new level rather than editing a measurement.
     """
     from dataclasses import replace
     merged = dict(stats.extra)
@@ -256,11 +223,9 @@ def with_flag(stats: LevelStats, *, invalid: str = "", warning: str = "",
 def as_vllm_json(stats: LevelStats) -> dict:
     """The level in `vllm bench serve`'s own JSON shape, plus this run's extras.
 
-    Same keys, same units (milliseconds), so measured_run3.py can load a level
-    from this harness with the loader written for run 2's files, and so a figure
-    quoted in docs/benchmarks/ can be found in either kind of artefact by the
-    same name. The harness-only fields are namespaced under `harness_` for the
-    opposite reason: nothing should be able to mistake one for a vLLM output.
+    Same keys and units (milliseconds), so one loader reads run 2's files and
+    this harness's alike. Harness-only fields are namespaced `harness_` so
+    nothing can mistake one for a vLLM output.
     """
     ms = 1e3
     out = {

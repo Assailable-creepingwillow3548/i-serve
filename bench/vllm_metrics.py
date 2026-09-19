@@ -1,22 +1,12 @@
 """The engine's own numbers: /metrics counters between levels, and the startup log.
 
-The client can only measure what it can see from outside, and two of run 3's
-questions are not visible from there. The prefix cache hit rate `h` is one --
-vLLM's V1 engine exposes no gauge for it, only the token counters
-`vllm:prefix_cache_queries` and `vllm:prefix_cache_hits`, whose ratio *over a
-window* is h (docs/GLOSSARY.md). The KV pool is the other, and it is not in
-/metrics at all: it is logged once at startup, and docs/SLO.md section 9 puts
-that log above every derivation in this repository.
-
-So this module does two things and nothing else: scrape counters around a level,
-and read the startup log's facts out of a file. Both return plain numbers; what
-they mean for a level is bench/harness.py's job.
-
-The window discipline is the point. A hit rate averaged over a whole session
-answers no question -- it mixes the cold first level with the warm last one --
-which is why the open item in docs/SLO.md section 10 specifies increments *per
-concurrency level*. Hence Snapshot and delta(), rather than a "read the gauge"
-function that would look simpler and be wrong.
+Two of run 3's questions are invisible from the client. The hit rate h is a
+ratio of two token counters over a window (docs/GLOSSARY.md); the KV pool is
+logged once at startup, and that log outranks every derivation here
+(docs/SLO.md section 9). This module scrapes counters around a level and reads
+the log's facts out of a file; what they mean for a level is bench/harness.py.
+Snapshot and delta() exist because h must be taken per concurrency level
+(docs/SLO.md section 10), not averaged over a session.
 """
 
 import re
@@ -25,9 +15,8 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
-# Counters and gauges worth carrying. Everything else vLLM exports is left on
-# the floor: a snapshot is written into the run's artefacts, and a file that
-# holds a hundred series per level stops being readable evidence.
+# Everything else vLLM exports is dropped: a snapshot is written into the
+# run's artefacts, and a hundred series per level is not readable evidence.
 COUNTERS = (
     "vllm:prefix_cache_queries",
     "vllm:prefix_cache_hits",
@@ -50,15 +39,9 @@ _SAMPLE = re.compile(r"^(?P<name>[a-zA-Z_:][a-zA-Z0-9_:]*)(?P<labels>\{[^}]*\})?
 def parse_prometheus(text: str) -> dict[str, float]:
     """Sum every series of a metric into one number per metric name.
 
-    Summing across label sets is correct for what this harness reads and would
-    be wrong for what it does not read. vLLM labels these counters with
-    model_name, and one server serves one model here, so the sum is the series;
-    a histogram's _bucket lines would not survive this treatment, which is why
-    no histogram is in COUNTERS or GAUGES.
-
-    Counter suffixes (_total) are folded onto the base name, because the client
-    library adds them and the documentation, the glossary and docs/SLO.md all
-    speak of `vllm:prefix_cache_hits` without one.
+    One server serves one model, so the sum across label sets is the series;
+    a histogram's _bucket lines would not survive it, so none is in COUNTERS or
+    GAUGES. A _total suffix is folded onto the base name, as the docs spell it.
     """
     out: dict[str, float] = {}
     for line in text.splitlines():
@@ -92,14 +75,11 @@ class Snapshot:
 
 def scrape(host: str = "127.0.0.1", port: int = 8000,
            timeout: float = 5.0) -> Snapshot:
-    """One GET /metrics, parsed. A plain blocking call, urllib and nothing else.
+    """One blocking GET /metrics, parsed.
 
-    Blocking is right for what this is -- a step between levels, not part of one
-    -- but it must never run *on* the event loop: while the loop is blocked on a
-    socket it cannot timestamp an arriving token, so a scrape in the wrong place
-    lands in the ITL distribution as a stall the server never produced. The
-    harness therefore calls it through asyncio.to_thread, which is also what
-    lets the whole thing be tested against an in-process fake server.
+    Never call it on the event loop: a blocked loop cannot timestamp an arriving
+    token, and the stall lands in the ITL distribution. The harness goes through
+    asyncio.to_thread, which also lets a fake server stand in for tests.
     """
     url = f"http://{host}:{port}/metrics"
     with urllib.request.urlopen(url, timeout=timeout) as response:
@@ -110,10 +90,8 @@ def scrape(host: str = "127.0.0.1", port: int = 8000,
 def delta(before: Snapshot, after: Snapshot) -> dict[str, float]:
     """Counter increments across a window. Gauges are taken from `after`.
 
-    A counter that went *down* means the server restarted mid-level, and that is
-    raised rather than clamped: every comparison across levels assumes one
-    engine process, and a silent 0 would hide the one event that invalidates the
-    whole sweep.
+    A counter that went down means the engine restarted mid-level; raised, not
+    clamped, because every cross-level comparison assumes one engine process.
     """
     out: dict[str, float] = {}
     for name in COUNTERS:
@@ -135,14 +113,9 @@ def delta(before: Snapshot, after: Snapshot) -> dict[str, float]:
 def scrape_fleet(endpoints: tuple[tuple[str, int], ...]) -> tuple[Snapshot, ...]:
     """One GET /metrics per engine, in the order given.
 
-    A fleet behind a router cannot be scraped through it: /metrics is not a
-    keyed path, so the router round-robins it and the answer is one replica's
-    counters chosen at random (docs/benchmarks/runsheets/mi300x-run-3.md
-    section 0). The endpoints are therefore the engines themselves, and they are
-    named separately from the address the load is sent to.
-
-    A refused scrape raises rather than being skipped: a level whose fleet is
-    only partly read has a hit rate that belongs to no arrangement.
+    /metrics is not a keyed path, so a router round-robins it and one replica
+    answers at random (docs/benchmarks/runsheets/mi300x-run-3.md section 0).
+    A refused scrape raises: a partly read fleet has no meaningful hit rate.
     """
     return tuple(scrape(host, port) for host, port in endpoints)
 
@@ -151,9 +124,7 @@ def delta_fleet(before: tuple[Snapshot, ...],
                 after: tuple[Snapshot, ...]) -> dict[str, float]:
     """The fleet's increments: each engine's delta, summed per counter.
 
-    Summing before dividing is what makes hit_rate() below the fleet's
-    token-weighted hit rate rather than an average of ratios -- two engines that
-    served different numbers of tokens do not get equal votes.
+    Summed before dividing, so hit_rate() is token-weighted, not a mean of ratios.
     """
     if len(before) != len(after):
         raise ValueError(f"{len(before)} snapshots before, {len(after)} after")
@@ -167,10 +138,8 @@ def delta_fleet(before: tuple[Snapshot, ...],
 def hit_rate(increments: dict[str, float]) -> float | None:
     """`h` over the window: hit tokens divided by queried tokens.
 
-    Returns None rather than 0.0 when nothing was queried. The two are different
-    findings -- "the cache served none of it" against "prefix caching is off, so
-    the counters do not exist" -- and a level that reports 0.0 for the second
-    would look like a measurement of the first.
+    None, not 0.0, when nothing was queried: "the cache served none of it" and
+    "prefix caching is off, so the counters do not exist" are different findings.
     """
     queries = increments.get("vllm:prefix_cache_queries")
     hits = increments.get("vllm:prefix_cache_hits")
@@ -181,11 +150,8 @@ def hit_rate(increments: dict[str, float]) -> float | None:
 
 # --- the startup log ---------------------------------------------------------
 #
-# Wording taken from run 2's own log, docs/benchmarks/raw/l40s-2026-08-23/
-# startup-lines.txt. It changes between vLLM versions, which is exactly why
-# these patterns live in one place with the file that produced them named: when
-# a future version renames a line, one regex fails loudly instead of a gate
-# quietly passing on a missing value.
+# Wording from run 2's log, docs/benchmarks/raw/l40s-2026-08-23/startup-lines.txt.
+# It changes between vLLM versions: a renamed line fails one regex loudly here.
 
 _LOG_PATTERNS = {
     "kv_cache_tokens": re.compile(r"GPU KV cache size:\s*([\d,]+)\s*tokens", re.I | re.S),
@@ -202,13 +168,10 @@ _LOG_PATTERNS = {
 def read_startup_log(path: str) -> dict[str, float | str]:
     """Pull the facts a run is gated on out of a vLLM startup log.
 
-    The four that matter, and why each is here rather than assumed:
-    the KV pool in tokens, because two launches of one identical config differed
-    by 4.2% and every seat count divides by it; prefix caching's actual state,
-    because a run measuring the cache against a server that has it off is the
-    most expensive possible way to measure nothing; the KV dtype and the
-    attention backend, because run 2 found one flag changing both
-    (docs/benchmarks/l40s-run2.md section 5).
+    The pool in tokens moves 4.2% between identical launches and every seat
+    count divides by it; prefix caching's actual state, the KV dtype and the
+    attention backend can change under one flag (docs/benchmarks/l40s-run2.md
+    sections 5-6).
     """
     with open(path, encoding="utf-8", errors="replace") as handle:
         text = handle.read()
@@ -229,18 +192,10 @@ def read_startup_log(path: str) -> dict[str, float | str]:
 def unread_startup_facts(facts: dict[str, float | str]) -> tuple[str, ...]:
     """Which of the gated facts the log did not yield.
 
-    read_startup_log returns only what matched, which is the right contract for
-    a parser and the wrong one for an operator: a renamed log line then removes a
-    gate instead of failing, and nothing says so. bench/harness.py gates the KV
-    pool only `if "kv_cache_tokens" in facts`, so a version that renames that
-    line runs the whole sweep ungated and prints nothing about it.
-
-    Run 2 met this failure twice in one session -- VLLM_ATTENTION_BACKEND
-    accepted and ignored, and `--help` no longer listing flags, both of which
-    looked like an absent feature rather than a changed name
-    (docs/benchmarks/runsheets/l40s-run-2.md, postscript items 3 and 4). This
-    function is that lesson as code: the misses are returned so the caller can print them,
-    and the operator learns in the first minute rather than never.
+    read_startup_log returns only what matched, so a renamed log line would
+    silently remove a gate (bench/harness.py gates the pool only if the key is
+    present). Returned for printing, so the operator learns in the first minute
+    (docs/benchmarks/runsheets/l40s-run-2.md, postscript items 3 and 4).
     """
     return tuple(key for key in _LOG_PATTERNS if key not in facts)
 
@@ -249,11 +204,9 @@ def pool_gate(logged_tokens: float, reference_tokens: float,
               tolerance: float = 0.05) -> tuple[bool, str]:
     """Is this pod's KV pool the same one the reference run measured?
 
-    The tolerance is 5% and it is not a round number chosen for comfort: two
-    launches of one identical configuration moved the logged pool by 4.2%
-    (docs/benchmarks/l40s-run2.md section 6). A tighter gate would fail on the
-    platform's own noise, which is the defect run 2's checkpoint gate had -- it
-    asked for +-0.3% of a quantity that moves 4.2%.
+    5% because two launches of one config moved the logged pool by 4.2%
+    (docs/benchmarks/l40s-run2.md section 6); a tighter gate fails on the
+    platform's own noise.
     """
     ratio = logged_tokens / reference_tokens
     ok = abs(ratio - 1.0) <= tolerance
