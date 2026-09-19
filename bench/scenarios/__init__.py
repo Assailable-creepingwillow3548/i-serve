@@ -140,7 +140,7 @@ class Workload:
         Reusing a measured prompt here would give that one request a full hit and
         lift the level's h above its nominal value by (1 - h) / num_prompts --
         0.3% at 60 requests, which is smaller than the measurement and still a
-        bias with a known sign, which section 9 says to remove rather than model.
+        bias with a known sign, removed rather than modelled.
 
         Negative indices, so a warmup record can never be mistaken for a measured
         one if the two ever land in the same file.
