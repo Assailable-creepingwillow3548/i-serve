@@ -989,10 +989,22 @@ through and routed `round_robin`: the bound on what inspecting a payload costs.
 the listener on SIGTERM, so that whatever is in front stops sending before the
 socket goes. The same ordering the stub uses on `DRAIN_DELAY_S`.
 
+**`-dial-timeout`** (`prefix-router`) — how long the router will spend
+discovering that an upstream is gone. A removed Pod address blackholes rather
+than refusing, so the default 30 s of Go's `http.DefaultTransport` is spent in
+full before the 502: measured 30.006 s against 0.026 s to a live replica, which
+is 100× the TTFT budget ([SLO.md](SLO.md) §1). It does not make the request
+succeed — there is no retry — it makes the failure arrive inside the budget.
+
 **Blackhole** (of an address) — a destination that neither answers nor refuses,
 so a connection attempt to it waits out its own timeout rather than failing. A
 Pod address removed from a cluster network behaves this way, which is why a
 stale upstream costs a full dial timeout and not a refused connection.
+
+**RTO** (retransmission timeout) — how long TCP waits for an acknowledgement
+before resending a segment. Its initial value is 1 s (RFC 6298 §2.1), so a dial
+timeout below one second fails a connection whose first SYN was dropped instead
+of recovering it — the trade `-dial-timeout` makes.
 
 **`imagePullPolicy`** — when the kubelet fetches a container image. `Never`
 requires the image to be on the node already, which is how a locally built

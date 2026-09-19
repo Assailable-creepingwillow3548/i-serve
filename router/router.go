@@ -15,9 +15,11 @@ import (
 	"context"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"sync/atomic"
+	"time"
 )
 
 type ctxKey int
@@ -48,9 +50,11 @@ type router struct {
 	proxy *httputil.ReverseProxy
 }
 
-func newRouter(keyBytes int, maxBody int64, c float64) *router {
+func newRouter(keyBytes int, maxBody int64, c float64, dialTimeout time.Duration) *router {
 	rt := &router{keyBytes: keyBytes, maxBody: maxBody, c: c}
 	rt.proxy = &httputil.ReverseProxy{
+		Transport: newTransport(dialTimeout),
+
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			rep := pr.In.Context().Value(replicaKey).(*replica)
 			pr.Out.URL.Scheme = rep.target.Scheme
@@ -82,6 +86,46 @@ func newRouter(keyBytes int, maxBody int64, c float64) *router {
 		},
 	}
 	return rt
+}
+
+// newTransport is the whole reason this router does not use the default one,
+// and the reason was measured rather than reasoned about: the figures are in
+// `../deploy/router/README.md` section 2, and are not repeated here.
+//
+// The mechanism behind them is this. `http.DefaultTransport` dials with a 30 s
+// timeout. A Pod address removed from the fleet does not refuse connections --
+// it blackholes them, because nothing in the cluster network claims the
+// address any more -- so every request the ring sends to a departed replica
+// waits out that full timeout before its 502, which is two orders of magnitude
+// past the TTFT budget (`../docs/SLO.md` section 1) spent producing an error.
+//
+// The dial timeout is therefore a policy number and not a detail: it is how
+// long the router is willing to spend discovering that a replica is gone. It
+// does not make the request succeed -- there is no retry (see ErrorHandler
+// above) -- it makes the failure arrive inside the budget instead of a hundred
+// budgets later.
+//
+// What the default buys that a short timeout gives up: TCP's initial
+// retransmission timeout is 1 s (RFC 6298 section 2.1), so a timeout below
+// that fails a request whose single SYN was dropped, where the default would
+// have recovered it. That is the
+// right side of the trade only because the alternative is spending three
+// TTFT budgets on one lost packet, and because the real answer to a dropped
+// SYN is the retry on a *different* replica that README.md still lists as
+// unwritten.
+func newTransport(dialTimeout time.Duration) http.RoundTripper {
+	// Cloned, so every other default -- idle pooling, HTTP/2 negotiation,
+	// proxy environment -- stays whatever the standard library thinks is
+	// right. One field is changed, and it is the one that was measured.
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.DialContext = (&net.Dialer{
+		Timeout: dialTimeout,
+		// Unchanged from the default, and kept explicit because it is next to
+		// the field that is not: this is the TCP keepalive probe interval on
+		// an established connection, not a limit on the dial.
+		KeepAlive: 30 * time.Second,
+	}).DialContext
+	return tr
 }
 
 // setUpstreams rebuilds the ring, carrying the in-flight counts of replicas

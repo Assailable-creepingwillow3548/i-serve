@@ -12,6 +12,12 @@ import (
 	"time"
 )
 
+// testDial is generous on purpose. Every upstream in this suite is a
+// httptest server on the loopback address, so the dial timeout is never the
+// thing under test; a tight value here would only turn a loaded CI runner
+// into a flake. What the production default is, and why, is newTransport.
+const testDial = 5 * time.Second
+
 // fleet stands up n upstreams that report which one they are, plus the router
 // in front of them.
 func fleet(t *testing.T, n int, keyBytes int, maxBody int64) (*httptest.Server, *router, []string, func(string) []byte) {
@@ -38,7 +44,7 @@ func fleet(t *testing.T, n int, keyBytes int, maxBody int64) (*httptest.Server, 
 		addrs = append(addrs, up.URL)
 	}
 
-	rt := newRouter(keyBytes, maxBody, 1.25)
+	rt := newRouter(keyBytes, maxBody, 1.25, testDial)
 	rt.setUpstreams(addrs, 128)
 	front := httptest.NewServer(rt)
 	t.Cleanup(front.Close)
@@ -147,7 +153,7 @@ func TestStreamIsNotBuffered(t *testing.T) {
 	}))
 	defer up.Close()
 
-	rt := newRouter(512, 1<<20, 1.25)
+	rt := newRouter(512, 1<<20, 1.25, testDial)
 	rt.setUpstreams([]string{up.URL}, 128)
 	front := httptest.NewServer(rt)
 	defer front.Close()
@@ -182,7 +188,7 @@ func TestDeadUpstreamIs502(t *testing.T) {
 	addr := dead.URL
 	dead.Close()
 
-	rt := newRouter(512, 1<<20, 1.25)
+	rt := newRouter(512, 1<<20, 1.25, testDial)
 	rt.setUpstreams([]string{addr}, 128)
 	front := httptest.NewServer(rt)
 	defer front.Close()
@@ -197,7 +203,7 @@ func TestDeadUpstreamIs502(t *testing.T) {
 // Scale-to-zero, or the moment before the first Pod is ready. 503 says "not
 // now"; a panic says nothing and takes the router with it.
 func TestNoUpstreamsIs503(t *testing.T) {
-	rt := newRouter(512, 1<<20, 1.25)
+	rt := newRouter(512, 1<<20, 1.25, testDial)
 	rt.setUpstreams(nil, 128)
 	front := httptest.NewServer(rt)
 	defer front.Close()

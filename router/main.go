@@ -25,6 +25,10 @@ func main() {
 	maxBody := flag.Int64("max-body", 1<<20, "bytes of request body the router will hold to read a prompt")
 	load := flag.Float64("bounded-load", 1.25, "in-flight cap as a multiple of the fleet mean; 1 or less disables the bound")
 	drain := flag.Duration("drain", 5*time.Second, "time between failing readiness and closing the listener on SIGTERM")
+	// 250 ms, and the number is argued where it is used -- newTransport in
+	// router.go. A flag rather than a constant because it is the one value
+	// here that a run might have to move without a rebuild.
+	dialTimeout := flag.Duration("dial-timeout", 250*time.Millisecond, "how long to spend discovering that an upstream is gone")
 	flag.Parse()
 
 	addrs := splitAddrs(*upstreams)
@@ -32,7 +36,7 @@ func main() {
 		log.Fatal("-upstreams is required")
 	}
 
-	rt := newRouter(*keyBytes, *maxBody, *load)
+	rt := newRouter(*keyBytes, *maxBody, *load, *dialTimeout)
 	rt.setUpstreams(addrs, *vnodes)
 
 	// The replica set is a flag today. It is a watch tomorrow, and the shape

@@ -209,7 +209,10 @@ Flags: `-key-bytes` (512; 0 routes only exact repeats), `-bounded-load` (1.25),
 `-vnodes` (128), `-max-body` (1 MiB — 4 000-token prompts are ~16 kB, so the
 cap is there for the request that is not a prompt at all), `-drain` (5 s between
 failing readiness and closing the listener, because withdrawing readiness and
-withdrawing traffic are one action — `../deploy/ingress/README.md`).
+withdrawing traffic are one action — `../deploy/ingress/README.md`),
+`-dial-timeout` (250 ms — how long to spend discovering that an upstream is
+gone; the default transport's 30 s is two orders of magnitude past the TTFT
+budget, measured in `../deploy/router/README.md` §2).
 
 `/-/healthz` is the router's own; every other path is forwarded.
 
@@ -232,9 +235,9 @@ withdrawing traffic are one action — `../deploy/ingress/README.md`).
   half is the recoverable one, and retrying it here is a second routing decision
   that needs its own test. What the `kind` run added is the bill for not having
   it: with a stale fleet, every request in the departed replica's share of the
-  ring fails, and it fails slowly (`../deploy/router/README.md` §2). A retry
-  would convert those into successes at the cost of the affinity they were
-  routed for — which is the trade to write down before writing the code.
+  ring fails, and `-dial-timeout` only decides how fast. A retry would convert
+  those into successes at the cost of the affinity they were routed for —
+  which is the trade to write down before writing the code.
 - **Where the replica set comes from.** It is still a flag — but the flag is no
   longer only an inelegance, it has a price, and the price was measured on
   `kind` on 2026-09-19: a fleet grown 3 → 4 left the new replica with **none**

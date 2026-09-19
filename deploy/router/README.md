@@ -49,15 +49,16 @@ blackholes them. With Go's default transport that is a **30 s** dial before the
 300 ms TTFT budget** ([`../../docs/SLO.md`](../../docs/SLO.md) §1), spent
 producing an error.
 
-**Unfixed as this is written.** The router sets no dial timeout of its own, so
-it inherits that default, and a stale fleet therefore costs a full 30 s per
-affected request rather than a fast error. Bounding the dial would not rescue
-the request — there is no retry — it would only return the failure inside the
-budget; the value is the next thing to decide.
+`-dial-timeout` (250 ms) is the fix, and it is a policy number rather than a
+detail: it does not make the request succeed — there is no retry — it makes the
+failure arrive inside the budget instead of a hundred budgets later. Re-measured
+after the change: **0.256 s**. The argument for the value, including what a
+timeout under one second gives up, is in `newTransport`
+([`../../router/router.go`](../../router/router.go)).
 
-It was not visible by reading. Every test in `router/` dials a `httptest`
-server on loopback, where a dead address refuses instantly and the dial timeout
-never runs: the suite was right and the environment was the wrong one.
+This is the defect the session was for. It was not visible by reading: every
+test in `router/` dials a `httptest` server on loopback, where a dead address
+refuses instantly and the dial timeout never runs.
 
 ## 3. Running it
 
