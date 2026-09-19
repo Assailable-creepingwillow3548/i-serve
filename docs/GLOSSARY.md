@@ -989,11 +989,12 @@ prefix yields an identical token prefix up to the token straddling the cut
 (`router/README.md` §2).
 
 **`X-Router-Policy`** (`prefix-router`) — the response header naming which of the
-five routing policies produced the choice: `prefix`, or one of four reasons the
-request fell back to `round_robin`. The list, and why four and not one, is
-`router/README.md` §1.
+six routing policies produced the choice: `prefix`, `round_robin` when the
+control arm asked for it, or one of four reasons the request *fell back* to
+round robin. The list, and why four reasons and not one, is `router/README.md`
+§1; the gate that reads it is `bench/harness.py --expect-policy`.
 
-**`-policy`** (`prefix-router`) ⏳ — which routing policy to apply to keyed
+**`-policy`** (`prefix-router`) — which routing policy to apply to keyed
 requests: `prefix`, or `round_robin` as a deliberate choice rather than a
 fallback. It exists so that a measurement can compare two policies over one
 fleet through one hop, differing in the policy alone
@@ -1319,13 +1320,13 @@ the same answer as data: the operating point as the dict `what_if_point()`
 returns, or the dry-run plan with its per-level verdicts. Both are the forms the
 site's export and its golden grid are built from.
 
-**`--metrics-endpoint`** (`bench/harness.py`) ⏳ — an engine to scrape `/metrics`
+**`--metrics-endpoint`** (`bench/harness.py`) — an engine to scrape `/metrics`
 from, repeatable, separate from the address the load is sent to. Needed the
 moment a router sits in front of a fleet: the load endpoint is then one hop, and
 the counters live on several engines behind it
 (`docs/benchmarks/runsheets/mi300x-run-3.md` §0).
 
-**`--expect-policy`** (`bench/harness.py`) ⏳ — the `X-Router-Policy` every
+**`--expect-policy`** (`bench/harness.py`) — the `X-Router-Policy` every
 response of a level must carry, or the level is invalid. Turns a routing arm
 from something believed into something checked: an arm that silently fell back
 to round robin produces a complete, plausible level otherwise.

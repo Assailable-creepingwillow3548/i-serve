@@ -823,6 +823,95 @@ def test_gauge_sampling_sees_the_batch_the_client_thinks_it_opened():
     assert not [w for w in stats.warnings if "peaked at" in w]
 
 
+def test_a_fleets_counters_are_summed_before_the_ratio_is_taken():
+    """Two engines that served different amounts do not get equal votes.
+
+    hit_rate() divides hits by queries, so summing the counters first gives the
+    fleet's token-weighted h; averaging two engines' ratios would give the idle
+    one the same weight as the busy one.
+    """
+    from vllm_metrics import Snapshot, delta_fleet, hit_rate
+
+    def snap(hits, queries, t):
+        return Snapshot(values={"vllm:prefix_cache_hits": hits,
+                                "vllm:prefix_cache_queries": queries}, at=t)
+
+    before = (snap(0, 0, 0.0), snap(0, 0, 0.0))
+    after = (snap(900, 1000, 1.0), snap(0, 1000, 1.0))   # one busy, one cold
+    increments = delta_fleet(before, after)
+
+    assert increments["vllm:prefix_cache_hits"] == 900
+    assert hit_rate(increments) == 0.45                  # not (0.9 + 0.0) / 2
+
+
+def test_a_half_read_fleet_is_not_a_measurement():
+    """Mismatched snapshot counts mean one engine was not read, and its tokens
+    are missing from a ratio that will be reported as the fleet's."""
+    from vllm_metrics import Snapshot, delta_fleet
+
+    one = (Snapshot(values={}, at=0.0),)
+    two = (Snapshot(values={}, at=1.0), Snapshot(values={}, at=1.0))
+    try:
+        delta_fleet(one, two)
+    except ValueError:
+        return
+    raise AssertionError("a fleet read twice at different widths was accepted")
+
+
+def test_metrics_endpoints_default_to_the_load_endpoint():
+    """Which is correct exactly when nothing sits in front of the engine -- the
+    shape of every run before the router existed."""
+    from harness import _metrics_endpoints
+    from loadgen import Endpoint
+
+    ep = Endpoint(host="127.0.0.1", port=8000)
+    assert _metrics_endpoints(None, ep) == (("127.0.0.1", 8000),)
+    assert _metrics_endpoints(["127.0.0.1:8000", "127.0.0.1:8001"], ep) == \
+        (("127.0.0.1", 8000), ("127.0.0.1", 8001))
+    for bad in ("8000", "host:", "host:port"):
+        try:
+            _metrics_endpoints([bad], ep)
+        except ValueError:
+            continue
+        raise AssertionError(f"accepted --metrics-endpoint {bad!r}")
+
+
+def test_a_level_routed_by_the_wrong_policy_is_invalid_not_noisy():
+    """The gate that would have caught the token-id body shape.
+
+    Every request falling back to round_robin while the arm believes it is
+    routing by prefix is not a noisy prefix measurement -- it is a control arm
+    wearing the treatment's name, and nothing else in the level says so
+    (docs/benchmarks/runsheets/mi300x-run-3.md section 0).
+    """
+    from harness import check_policy
+    from stats import SLOTargets as Targets, summarize
+
+    def records(policies):
+        out = []
+        for i, policy in enumerate(policies):
+            rec = Record(index=i, prompt_tokens=4, scheduled=0.0)
+            rec.sent, rec.ttft, rec.policy = 0.0, 0.01, policy
+            rec.latency, rec.itls, rec.output_tokens = 0.05, [0.01, 0.01], 3
+            out.append(rec)
+        return out
+
+    # A closed-loop level already carries one invalid flag of its own
+    # (ttft-not-a-service-metric), so the assertions are about the flag this
+    # gate adds, not about the count.
+    blank = summarize("w", "closed", [], 1.0, Targets())
+
+    def routing_flags(stats):
+        return [note for note in stats.invalid if "routed" in note]
+
+    assert not routing_flags(check_policy(blank, records(["prefix"] * 4), "prefix"))
+    assert not routing_flags(check_policy(blank, records(["no-prompt"] * 4), None))
+
+    fell_back = check_policy(blank, records(["no-prompt"] * 4), "prefix")
+    assert routing_flags(fell_back), "a level that never routed by prefix passed"
+    assert fell_back.extra["policy_no-prompt"] == 4.0, fell_back.extra
+
+
 TESTS = [value for name, value in sorted(globals().items())
          if name.startswith("test_") and callable(value)]
 

@@ -44,7 +44,7 @@ func fleet(t *testing.T, n int, keyBytes int, maxBody int64) (*httptest.Server, 
 		addrs = append(addrs, up.URL)
 	}
 
-	rt := newRouter(keyBytes, maxBody, 1.25, testDial)
+	rt := newRouter(keyBytes, maxBody, 1.25, testDial, true)
 	rt.setUpstreams(addrs, 128)
 	front := httptest.NewServer(rt)
 	t.Cleanup(front.Close)
@@ -153,7 +153,7 @@ func TestStreamIsNotBuffered(t *testing.T) {
 	}))
 	defer up.Close()
 
-	rt := newRouter(512, 1<<20, 1.25, testDial)
+	rt := newRouter(512, 1<<20, 1.25, testDial, true)
 	rt.setUpstreams([]string{up.URL}, 128)
 	front := httptest.NewServer(rt)
 	defer front.Close()
@@ -188,7 +188,7 @@ func TestDeadUpstreamIs502(t *testing.T) {
 	addr := dead.URL
 	dead.Close()
 
-	rt := newRouter(512, 1<<20, 1.25, testDial)
+	rt := newRouter(512, 1<<20, 1.25, testDial, true)
 	rt.setUpstreams([]string{addr}, 128)
 	front := httptest.NewServer(rt)
 	defer front.Close()
@@ -203,7 +203,7 @@ func TestDeadUpstreamIs502(t *testing.T) {
 // Scale-to-zero, or the moment before the first Pod is ready. 503 says "not
 // now"; a panic says nothing and takes the router with it.
 func TestNoUpstreamsIs503(t *testing.T) {
-	rt := newRouter(512, 1<<20, 1.25, testDial)
+	rt := newRouter(512, 1<<20, 1.25, testDial, true)
 	rt.setUpstreams(nil, 128)
 	front := httptest.NewServer(rt)
 	defer front.Close()
@@ -269,5 +269,43 @@ func TestInFlightReturnsToZero(t *testing.T) {
 	}
 	if total != 0 {
 		t.Errorf("%d requests still counted in flight after all of them finished", total)
+	}
+}
+
+// The control arm: the same binary, the same hop, the same fleet, and the
+// affinity thrown away. It exists so a measurement can attribute a difference
+// to the policy rather than to the route the traffic took
+// (docs/benchmarks/runsheets/mi300x-run-3.md section 4).
+func TestRoundRobinPolicySpreadsOneKeyAndSaysSo(t *testing.T) {
+	front, rt, addrs, _ := fleet(t, 4, 512, 1<<20)
+	rt.affinity = false
+	body := `{"model":"qwen","prompt":"the same long system prompt, repeated"}`
+
+	seen := map[string]bool{}
+	for i := 0; i < 20; i++ {
+		resp := post(t, front, "/v1/completions", body)
+		got, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if p := resp.Header.Get("X-Router-Policy"); p != "round_robin" {
+			t.Fatalf("policy %q, want round_robin", p)
+		}
+		seen[string(got)] = true
+	}
+	if len(seen) != len(addrs) {
+		t.Errorf("one key reached %d of %d replicas under round_robin", len(seen), len(addrs))
+	}
+}
+
+// And the four fallbacks survive the control arm. A body the router cannot key
+// still says so, so a control full of `no-prompt` is still the body-shape
+// defect and not a policy that happens to look the same from outside.
+func TestControlArmStillReportsAnUnkeyableBody(t *testing.T) {
+	front, rt, _, _ := fleet(t, 2, 512, 1<<20)
+	rt.affinity = false
+
+	resp := post(t, front, "/v1/completions", `{"model":"qwen"}`)
+	resp.Body.Close()
+	if p := resp.Header.Get("X-Router-Policy"); p != "no-prompt" {
+		t.Fatalf("policy %q, want no-prompt", p)
 	}
 }

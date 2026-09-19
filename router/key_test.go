@@ -100,3 +100,56 @@ func TestZeroKeyBytesRoutesOnlyExactRepeats(t *testing.T) {
 		t.Error("key-bytes=0 still matched on a prefix")
 	}
 }
+
+// The shape bench/loadgen.py sends: the prompt as token ids. Before 2026-09-19
+// this body produced no key, so every benchmark request took the `no-prompt`
+// fallback and a prefix-routing arm measured round_robin against round_robin --
+// with no error anywhere, which is what makes it worth a test rather than a
+// note (docs/benchmarks/runsheets/mi300x-run-3.md section 0).
+func TestTokenIdPromptsAreKeyed(t *testing.T) {
+	body := `{"model":"qwen","prompt":[151,2934,88,17],"max_tokens":200}`
+	if _, ok := cacheKey([]byte(body), 512); !ok {
+		t.Fatal("a token-id prompt produced no key")
+	}
+}
+
+// Two prompts that share their leading ids and differ after the cut are one
+// key, which is the whole routing claim stated in ids instead of bytes -- and
+// in ids it holds without the BPE qualifier the file header carries.
+func TestTokenIdPromptsShareAKeyByTheirPrefix(t *testing.T) {
+	// Sixteen ids of five characters each is past a 64-byte cut; the tails
+	// differ and must not reach the key.
+	a := `{"model":"qwen","prompt":[10001,10002,10003,10004,10005,10006,10007,10008,10009,10010,10011,10012,10013,10014,77777]}`
+	b := `{"model":"qwen","prompt":[10001,10002,10003,10004,10005,10006,10007,10008,10009,10010,10011,10012,10013,10014,88888]}`
+	ka, oka := cacheKey([]byte(a), 64)
+	kb, okb := cacheKey([]byte(b), 64)
+	if !oka || !okb {
+		t.Fatal("no key")
+	}
+	if ka != kb {
+		t.Error("a shared id prefix did not share a key")
+	}
+	// And the cut is real: the same two prompts keyed in full are two keys.
+	if fa, _ := cacheKey([]byte(a), 0); fa == mustKey(t, b, 0) {
+		t.Error("prompts differing in their last id shared a whole-prompt key")
+	}
+}
+
+// [1,23] and [12,3] are different prompts and must not collide, for the same
+// reason ["ab","c"] and ["a","bc"] must not.
+func TestTokenIdBoundariesAreNotFlattenedAway(t *testing.T) {
+	a, _ := cacheKey([]byte(`{"model":"qwen","prompt":[1,23]}`), 512)
+	b, _ := cacheKey([]byte(`{"model":"qwen","prompt":[12,3]}`), 512)
+	if a == b {
+		t.Error("id boundaries were lost")
+	}
+}
+
+func mustKey(t *testing.T, body string, keyBytes int) uint64 {
+	t.Helper()
+	k, ok := cacheKey([]byte(body), keyBytes)
+	if !ok {
+		t.Fatalf("no key from %s", body)
+	}
+	return k
+}

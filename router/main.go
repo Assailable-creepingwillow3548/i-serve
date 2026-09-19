@@ -29,14 +29,23 @@ func main() {
 	// router.go. A flag rather than a constant because it is the one value
 	// here that a run might have to move without a rebuild.
 	dialTimeout := flag.Duration("dial-timeout", 250*time.Millisecond, "how long to spend discovering that an upstream is gone")
+	// The policy is a flag so that one binary, one hop and one fleet can serve
+	// both arms of a measurement. Without it round_robin is only something this
+	// router falls back *to*, and a control arm would have to reach the engines
+	// by another door -- differing in hops rather than in policy.
+	policy := flag.String("policy", "prefix", "routing policy for keyed requests: prefix or round_robin")
 	flag.Parse()
+
+	if *policy != "prefix" && *policy != "round_robin" {
+		log.Fatalf("-policy %q: prefix or round_robin", *policy)
+	}
 
 	addrs := splitAddrs(*upstreams)
 	if len(addrs) == 0 {
 		log.Fatal("-upstreams is required")
 	}
 
-	rt := newRouter(*keyBytes, *maxBody, *load, *dialTimeout)
+	rt := newRouter(*keyBytes, *maxBody, *load, *dialTimeout, *policy == "prefix")
 	rt.setUpstreams(addrs, *vnodes)
 
 	// The replica set is a flag today. It is a watch tomorrow, and the shape

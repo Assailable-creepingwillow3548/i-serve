@@ -88,10 +88,26 @@ func cacheKey(body []byte, keyBytes int) (uint64, bool) {
 	return hash64(s), true
 }
 
-// writeStringOrArray appends one JSON value that may be a string or an array of
-// strings, stopping once the builder holds keyBytes of prompt. Anything else --
-// a number, an object, a multimodal content part -- is skipped rather than
-// guessed at; a body made only of those yields no key and takes the fallback.
+// writeStringOrArray appends one JSON value that may be a string, an array of
+// strings, or an array of numbers, stopping once the builder holds keyBytes of
+// prompt. Anything else -- an object, a multimodal content part, an array of
+// arrays -- is skipped rather than guessed at; a body made only of those yields
+// no key and takes the fallback.
+//
+// The number case is the OpenAI API's token-id prompt, and it is not an
+// afterthought: it is the shape bench/loadgen.py sends, so without it every
+// benchmark request this repository can generate takes the `no-prompt`
+// fallback and a prefix-routing arm silently measures round_robin twice
+// (found 2026-09-19, docs/benchmarks/runsheets/mi300x-run-3.md section 0).
+//
+// Ids are a *better* key than text, and the one place this router's central
+// approximation disappears: the claim in the file header is that an identical
+// byte prefix implies an identical token prefix up to the straddling token.
+// When the ids themselves are what is hashed there is no tokenizer between the
+// key and the cache, so the qualifier does not apply. What keyBytes means moves
+// with the shape -- 512 bytes is ~128 tokens of text and ~100 ids at four
+// characters and a separator each -- and it stays a bound on work, not a
+// promise about tokens.
 func writeStringOrArray(sb *strings.Builder, raw json.RawMessage, keyBytes, base int) {
 	var one string
 	if err := json.Unmarshal(raw, &one); err == nil {
@@ -105,6 +121,21 @@ func writeStringOrArray(sb *strings.Builder, raw json.RawMessage, keyBytes, base
 				return
 			}
 			sb.WriteString(s)
+			sb.WriteByte(0x1d)
+		}
+		return
+	}
+	// json.Number rather than int: it keeps the digits the client sent instead
+	// of a float64 round-trip, so two clients that agree on the ids cannot
+	// disagree on the key. The same 0x1d between elements as above, and for the
+	// same reason -- [1,23] and [12,3] must not collide.
+	var ids []json.Number
+	if err := json.Unmarshal(raw, &ids); err == nil {
+		for _, id := range ids {
+			if keyBytes > 0 && sb.Len()-base >= keyBytes {
+				return
+			}
+			sb.WriteString(id.String())
 			sb.WriteByte(0x1d)
 		}
 	}

@@ -47,11 +47,19 @@ type router struct {
 	maxBody  int64
 	c        float64
 
+	// affinity false is the control arm: the body is still read and the key
+	// still computed, and only the decision is thrown away. A control that
+	// skipped the read would differ from the treatment in a hop's work as well
+	// as in its policy, and the difference measured would be both
+	// (docs/benchmarks/runsheets/mi300x-run-3.md section 4).
+	affinity bool
+
 	proxy *httputil.ReverseProxy
 }
 
-func newRouter(keyBytes int, maxBody int64, c float64, dialTimeout time.Duration) *router {
-	rt := &router{keyBytes: keyBytes, maxBody: maxBody, c: c}
+func newRouter(keyBytes int, maxBody int64, c float64, dialTimeout time.Duration,
+	affinity bool) *router {
+	rt := &router{keyBytes: keyBytes, maxBody: maxBody, c: c, affinity: affinity}
 	rt.proxy = &httputil.ReverseProxy{
 		Transport: newTransport(dialTimeout),
 
@@ -184,6 +192,14 @@ func (rt *router) choose(rg *ring, req *http.Request) (*replica, string) {
 	key, ok := cacheKey(body, rt.keyBytes)
 	if !ok {
 		return rg.next(), "no-prompt"
+	}
+	// A key was computed and is being ignored on purpose. Reported as its own
+	// value rather than as one of the four fallbacks, because the fallbacks all
+	// mean "this router could not route" and this one means "it was told not
+	// to" -- and a control arm reporting `no-prompt` instead of `round_robin`
+	// is the body-shape defect, still visible.
+	if !rt.affinity {
+		return rg.next(), "round_robin"
 	}
 	return rg.pick(key, rt.c), "prefix"
 }

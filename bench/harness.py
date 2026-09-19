@@ -44,13 +44,33 @@ from roofline import ACCELERATORS, QWEN3_8B, max_num_seqs_from_slo, tpot_floor, 
 from scenarios import Workload
 from scenarios.prefix_sweep import SCENARIOS
 from stats import LevelStats, SLOTargets, as_vllm_json, summarize, with_flag
-from vllm_metrics import (delta, hit_rate, pool_gate, read_startup_log,
+from vllm_metrics import (delta, delta_fleet, hit_rate, pool_gate,
+                          read_startup_log, scrape_fleet,
                           scrape, unread_startup_facts)
 
 # Run 1's logged pool on the L40S, the reference the +-5% gate compares against
 # (docs/benchmarks/l40s-baseline.md). A flag rather than a constant the moment a
 # different card is used -- which is what --reference-pool is for.
 DEFAULT_REFERENCE_POOL = 168_985
+
+
+def _metrics_endpoints(values: list[str] | None,
+                       ep: Endpoint) -> tuple[tuple[str, int], ...]:
+    """`HOST:PORT` strings into pairs, or the load endpoint when none is given.
+
+    Strict about the shape on purpose: a typo here does not fail, it reads a
+    different engine's counters, and the level it produces looks exactly like a
+    level that measured something.
+    """
+    if not values:
+        return ((ep.host, ep.port),)
+    out = []
+    for value in values:
+        host, _, port = value.rpartition(":")
+        if not host or not port.isdigit():
+            raise ValueError(f"--metrics-endpoint {value!r}: expected HOST:PORT")
+        out.append((host, int(port)))
+    return tuple(out)
 
 
 def _write_json(path: str, payload) -> None:
@@ -139,7 +159,43 @@ def check_hit_rate(stats: LevelStats, workload: Workload,
     return with_flag(stats, extra=extra)
 
 
-async def sample_gauges(ep: Endpoint, interval: float, into: dict) -> None:
+def check_policy(stats: LevelStats, records: list[Record],
+                 expected: str | None) -> LevelStats:
+    """Was this level routed the way the arm says it was?
+
+    The gate that exists because the alternative was found the expensive way on
+    paper: bench/loadgen.py sends its prompt as token ids, and until 2026-09-19
+    the router could not read that shape, so every request took the round_robin
+    fallback and a prefix arm would have measured the control twice with nothing
+    reporting a fault (docs/benchmarks/runsheets/mi300x-run-3.md section 0).
+
+    Invalidating rather than warning, because a level routed by the wrong policy
+    is not a noisy measurement of the right one -- it is a measurement of
+    something else wearing the level's name.
+    """
+    if expected is None:
+        return stats
+
+    counts: dict[str, int] = {}
+    for rec in records:
+        if rec.ok:
+            counts[rec.policy or "none"] = counts.get(rec.policy or "none", 0) + 1
+    extra = {f"policy_{name}": float(n) for name, n in counts.items()}
+    stats = with_flag(stats, extra=extra)
+
+    wrong = sum(n for name, n in counts.items() if name != expected)
+    if not counts:
+        return stats
+    if wrong:
+        summary = ", ".join(f"{name} {n}" for name, n in sorted(counts.items()))
+        return with_flag(stats, invalid=(
+            f"{wrong} of {sum(counts.values())} responses were not routed "
+            f"`{expected}` ({summary}): the arm is not the arm it claims"))
+    return stats
+
+
+async def sample_gauges(metrics: tuple[tuple[str, int], ...],
+                        interval: float, into: dict) -> None:
     """Poll the engine's gauges while a level runs, keeping the peaks.
 
     Without this a level can only say what the *client* did. Run 1's seat count
@@ -157,20 +213,28 @@ async def sample_gauges(ep: Endpoint, interval: float, into: dict) -> None:
     while True:
         await asyncio.sleep(interval)
         try:
-            snapshot = await asyncio.to_thread(scrape, ep.host, ep.port)
+            snapshots = await asyncio.to_thread(scrape_fleet, metrics)
         except OSError:
             continue                     # a refused scrape is not a failed level
-        for name in ("vllm:num_requests_running", "vllm:num_requests_waiting",
-                     "vllm:gpu_cache_usage_perc"):
-            value = snapshot.get(name)
-            if value is not None:
+        # Counts add across a fleet and a fraction does not: two engines at 40 %
+        # of their pools are a fleet at 40 %, not at 80 %. Summing that column
+        # would report a pool pressure no engine is under.
+        for name, combine in (("vllm:num_requests_running", sum),
+                              ("vllm:num_requests_waiting", sum),
+                              ("vllm:gpu_cache_usage_perc", max)):
+            values = [s.get(name) for s in snapshots]
+            values = [v for v in values if v is not None]
+            if values:
                 key = f"max_{name.split(':')[1]}"
-                into[key] = max(into.get(key, 0.0), value)
+                into[key] = max(into.get(key, 0.0), combine(values))
 
 
 async def run_level(workload: Workload, ep: Endpoint, targets: SLOTargets,
                     accel, settle: float, warm: bool, max_in_flight: int | None,
-                    sample_interval: float = 0.0) -> tuple[LevelStats, list[Record], dict]:
+                    sample_interval: float = 0.0,
+                    metrics: tuple[tuple[str, int], ...] = (),
+                    expect_policy: str | None = None,
+                    ) -> tuple[LevelStats, list[Record], dict]:
     """One level end to end: settle, warm the cache, scrape, load, scrape, judge.
 
     The order is the measurement. The settle wait comes first, so the previous
@@ -178,6 +242,10 @@ async def run_level(workload: Workload, ep: Endpoint, targets: SLOTargets,
     measured; the warmup comes before the first scrape, so the misses that seed
     the prefix land outside this level's counter window.
     """
+    # The load goes to one address; the counters come from the engines. The two
+    # are the same thing only when nothing sits in front of them.
+    metrics = metrics or ((ep.host, ep.port),)
+
     if settle > 0:
         await asyncio.sleep(settle)
 
@@ -189,10 +257,10 @@ async def run_level(workload: Workload, ep: Endpoint, targets: SLOTargets,
                     f"{workload.name}: warmup request failed ({record.error}); "
                     f"a cold prefix would make every h below meaningless")
 
-    before = await asyncio.to_thread(scrape, ep.host, ep.port)
+    before = await asyncio.to_thread(scrape_fleet, metrics)
     requests = workload.build()
     peaks: dict[str, float] = {}
-    sampler = (asyncio.create_task(sample_gauges(ep, sample_interval, peaks))
+    sampler = (asyncio.create_task(sample_gauges(metrics, sample_interval, peaks))
                if sample_interval > 0 else None)
     try:
         if workload.mode == "closed":
@@ -204,14 +272,15 @@ async def run_level(workload: Workload, ep: Endpoint, targets: SLOTargets,
     finally:
         if sampler is not None:
             sampler.cancel()
-    after = await asyncio.to_thread(scrape, ep.host, ep.port)
+    after = await asyncio.to_thread(scrape_fleet, metrics)
 
-    increments = delta(before, after)
+    increments = delta_fleet(before, after)
     measured_h = hit_rate(increments)
 
     stats = summarize(workload.name, workload.mode, records, duration, targets)
     stats = check_hit_rate(stats, workload, measured_h)
     stats = check_prefill_floor(stats, workload, measured_h, accel)
+    stats = check_policy(stats, records, expect_policy)
 
     load = workload.concurrency if workload.mode == "closed" else workload.request_rate
     extra = {
@@ -451,6 +520,19 @@ def main(argv: list[str] | None = None) -> int:
                         help="poll num_requests_running/waiting while each level "
                              "runs, keeping the peaks; costs one HTTP round trip "
                              "per sample against the server being measured")
+    parser.add_argument("--metrics-endpoint", action="append", default=None,
+                        metavar="HOST:PORT",
+                        help="an engine to read /metrics from, repeatable. "
+                             "Default: the load endpoint, which is right only "
+                             "when nothing sits in front of it -- behind a "
+                             "router /metrics is an unkeyed path and the answer "
+                             "is one replica picked by the fallback")
+    parser.add_argument("--expect-policy", default=None,
+                        choices=("prefix", "round_robin"),
+                        help="fail any level whose responses did not all carry "
+                             "this X-Router-Policy. The gate for a two-arm "
+                             "routing measurement: without it an arm that "
+                             "silently fell back looks like a result")
     parser.add_argument("--startup-log", default=None,
                         help="vLLM server log, for the KV pool and config gates")
     parser.add_argument("--reference-pool", type=float, default=DEFAULT_REFERENCE_POOL)
@@ -483,6 +565,10 @@ def main(argv: list[str] | None = None) -> int:
 
     ep = Endpoint(host=args.host, port=args.port, model=args.model,
                   api_key=args.api_key)
+    try:
+        metrics = _metrics_endpoints(args.metrics_endpoint, ep)
+    except ValueError as exc:
+        parser.error(str(exc))
     out = args.out or os.path.join(
         "results", f"{time.strftime('%Y%m%d-%H%M%S')}-{args.scenario}")
     os.makedirs(out, exist_ok=True)
@@ -492,6 +578,8 @@ def main(argv: list[str] | None = None) -> int:
         "started": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "argv": sys.argv,
         "endpoint": {"host": ep.host, "port": ep.port, "model": ep.model},
+        "metrics_endpoints": [f"{host}:{port}" for host, port in metrics],
+        "expect_policy": args.expect_policy,
         "accelerator": accel.name,
         # The console header says where the coefficients came from; so must
         # the file, or a results/ directory read months later cannot say
@@ -539,7 +627,8 @@ def main(argv: list[str] | None = None) -> int:
         stats, records, increments = asyncio.run(run_level(
             workload, ep, targets, accel, args.settle,
             warm=not args.no_warmup, max_in_flight=args.max_in_flight,
-            sample_interval=args.sample_gauges))
+            sample_interval=args.sample_gauges, metrics=metrics,
+            expect_policy=args.expect_policy))
         collected.append(stats)
         print(format_row(stats))
         for note in stats.invalid:

@@ -103,6 +103,11 @@ class Record:
     output_tokens: int = 0
     usage_output_tokens: int | None = None
     error: str | None = None
+    # X-Router-Policy, when something in front of the engine set it. None means
+    # nothing did, which is the ordinary case of loading an engine directly --
+    # not a failed read. What it is for: a request routed by prefix and a
+    # request that fell back look identical in every other field here.
+    policy: str | None = None
 
     @property
     def ok(self) -> bool:
@@ -239,6 +244,7 @@ async def send_one(ep: Endpoint, req: Request, scheduled: float) -> Record:
         await writer.drain()
 
         status, headers = await asyncio.wait_for(_read_headers(reader), ep.timeout)
+        rec.policy = headers.get("x-router-policy")
         if status != 200:
             detail = b"".join([c async for c in _iter_body(reader, headers)])
             rec.error = f"HTTP {status}: {detail[:200].decode('utf-8', 'replace')}"

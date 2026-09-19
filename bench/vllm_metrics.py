@@ -132,6 +132,38 @@ def delta(before: Snapshot, after: Snapshot) -> dict[str, float]:
     return out
 
 
+def scrape_fleet(endpoints: tuple[tuple[str, int], ...]) -> tuple[Snapshot, ...]:
+    """One GET /metrics per engine, in the order given.
+
+    A fleet behind a router cannot be scraped through it: /metrics is not a
+    keyed path, so the router round-robins it and the answer is one replica's
+    counters chosen at random (docs/benchmarks/runsheets/mi300x-run-3.md
+    section 0). The endpoints are therefore the engines themselves, and they are
+    named separately from the address the load is sent to.
+
+    A refused scrape raises rather than being skipped: a level whose fleet is
+    only partly read has a hit rate that belongs to no arrangement.
+    """
+    return tuple(scrape(host, port) for host, port in endpoints)
+
+
+def delta_fleet(before: tuple[Snapshot, ...],
+                after: tuple[Snapshot, ...]) -> dict[str, float]:
+    """The fleet's increments: each engine's delta, summed per counter.
+
+    Summing before dividing is what makes hit_rate() below the fleet's
+    token-weighted hit rate rather than an average of ratios -- two engines that
+    served different numbers of tokens do not get equal votes.
+    """
+    if len(before) != len(after):
+        raise ValueError(f"{len(before)} snapshots before, {len(after)} after")
+    totals: dict[str, float] = {}
+    for b, a in zip(before, after):
+        for name, value in delta(b, a).items():
+            totals[name] = totals.get(name, 0.0) + value
+    return totals
+
+
 def hit_rate(increments: dict[str, float]) -> float | None:
     """`h` over the window: hit tokens divided by queried tokens.
 

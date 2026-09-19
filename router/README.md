@@ -26,14 +26,19 @@ is visible from outside without a debugger.
 | `X-Router-Policy` | When | What it means for the cache |
 |---|---|---|
 | `prefix` | a prompt was read from a keyed route | the request goes to the replica that took its prefix last time |
+| `round_robin` | `-policy round_robin`: the key was computed and thrown away | the control arm of a measurement. The body is still read, so the two arms differ in the decision and not in the work |
 | `no-prompt` | the body parsed but held no prompt this router reads | `round_robin` — the `h` = 0 column |
 | `unreadable-body` | the client stopped sending | `round_robin`; the upstream produces the error, not the router |
 | `oversized-body` | the body is past `-max-body` | `round_robin`, and the body is streamed rather than held |
 | `unkeyed-path` | anything but `POST` to a completions route | `round_robin`; those bodies are never read |
 
-Three of the five mean *this request will not find a warm prefix*. An operator
-who cannot tell them apart cannot tell a cold workload from a broken router,
-which is why they are five values and not a boolean.
+Four of the six mean *this request will not find a warm prefix*, and they are
+not interchangeable: `round_robin` is a policy that was chosen, the other three
+are a router that could not route. An operator who cannot tell them apart cannot
+tell a cold workload from a broken router — and a control arm reporting
+`no-prompt` where it should report `round_robin` is the body-shape defect of
+2026-09-19, still visible from outside
+([`../docs/benchmarks/runsheets/mi300x-run-3.md`](../docs/benchmarks/runsheets/mi300x-run-3.md) §0).
 
 ## 2. The key is bytes, and the claim that makes that legal
 
@@ -222,7 +227,11 @@ budget, measured in `../deploy/router/README.md` §2).
   which replica, how evenly, how often it changes. Not one of them says the
   seat count moves. That measurement needs the fleet on `kind` and then a card,
   and the prediction has to be written before the run
-  ([`../docs/adding-a-run.md`](../docs/adding-a-run.md)).
+  ([`../docs/adding-a-run.md`](../docs/adding-a-run.md)). That prediction now
+  exists and the run does not:
+  [`../docs/benchmarks/runsheets/mi300x-run-3.md`](../docs/benchmarks/runsheets/mi300x-run-3.md),
+  written 2026-09-19, which also found three reasons the run would have measured
+  nothing without erroring — the first of them the key this file's §2 defends.
 - **That the byte prefix buys the block alignment §2 argues it does.** The
   argument is about BPE, and BPE was not run. The test is one prompt pair
   tokenized by the engine's own tokenizer, compared block by block.
