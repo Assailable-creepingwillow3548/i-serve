@@ -1,31 +1,13 @@
 """Workload definitions: what gets sent, in what shape, at what arrival pattern.
 
-A workload here is data plus the arithmetic that turns it into token IDs. It
-holds no predictions -- those are bench/predictions.py -- and no timings, which
-are the harness's output. The split is the one bench/predictions.py already
-states: this directory is prompts and arrival rates, not predictions about them.
-
-The whole reason this file exists rather than a `--prompt-len` flag is the
-independent variable of run 3. `docs/SLO.md` section 10 asks for a seat count
-"against a known cache hit rate", and a hit rate is only known if the prompts
-are built to produce it. So a Workload states a *target* h, and the arithmetic
-below turns it into a shared prefix of a length the engine can actually cache:
-
-  - vLLM hashes KV in blocks of `block_size` tokens (16 by default) and caches
-    only whole blocks, so a 1 200-token prefix at h = 0.8 of a 1 500-token
-    prompt is cacheable to 1 200 exactly, while 1 205 would be cacheable to
-    1 200 and quietly report a lower h than the flag asked for. The prefix is
-    therefore floored onto a block boundary and the *nominal* h recomputed from
-    what survives, never from what was requested.
-  - The nominal h is what the measured h from `vllm:prefix_cache_hits` /
-    `vllm:prefix_cache_queries` is scored against. They are two independent
-    routes to the same quantity, and a run where they disagree has a defect in
-    the workload, not in the engine.
-
-Prompts are token IDs (see bench/loadgen.py). The ids are drawn from a range
-that is safely inside every vocabulary this repository serves and far from the
-special tokens at the top of Qwen3's: what a token *means* is irrelevant to a
-prefill measurement, but a stray EOS in the middle of a prompt would not be.
+Prompts and arrival rates, not predictions about them (bench/predictions.py)
+and not timings (the harness's output). A Workload states a *target* h and
+builds a shared prefix the engine can cache: vLLM caches KV in whole blocks
+of BLOCK_SIZE, so the prefix is floored onto a block boundary and the nominal
+h is recomputed from what survives, never from what was requested
+(docs/GLOSSARY.md, nominal hit rate). Prompts are token IDs (bench/loadgen.py)
+drawn clear of every served vocabulary's special tokens: a stray EOS mid-prompt
+would end the prefill it was meant to measure.
 """
 
 import random
@@ -33,12 +15,10 @@ from dataclasses import dataclass
 
 from loadgen import Request
 
-# vLLM's default block_size. A run that overrides it must override this too --
-# hence a named constant rather than 16 written into the arithmetic below.
+# vLLM's default block_size; a run that overrides it must override this too.
 BLOCK_SIZE = 16
 
-# Ordinary tokens in every tokenizer this project touches; Qwen3's specials live
-# at 151643+ and its vocabulary is 151 936, so this range is both valid and dull.
+# Ordinary tokens in every served vocabulary; Qwen3's specials start at 151643.
 TOKEN_ID_MIN = 1_000
 TOKEN_ID_MAX = 100_000
 
@@ -47,12 +27,10 @@ TOKEN_ID_MAX = 100_000
 class Workload:
     """One benchmark level: the prompts, the arrival pattern, the target h.
 
-    mode is "closed" or "poisson", and exactly one of concurrency / request_rate
-    means anything for each. They are separate fields rather than one `load`
-    number because they are not the same quantity in different units: one is a
-    number of seats held open, the other requests per second arriving whether or
-    not a seat is free -- and confusing the two is how a TTFT gets compared with
-    a target it cannot be compared with (docs/GLOSSARY.md, closed loop).
+    mode is "closed" or "poisson"; concurrency means something only for the
+    first, request_rate only for the second. Two fields, not one `load`
+    number: seats held open and arrivals per second are different quantities
+    (docs/GLOSSARY.md, closed-loop load).
     """
 
     name: str
@@ -78,8 +56,7 @@ class Workload:
         if self.num_prefixes > self.num_prompts:
             raise ValueError(f"{self.name}: more prefixes than requests to use them")
         if self.output_tokens < 2:
-            # One token has no ITL and therefore no TPOT: a level of them cannot
-            # answer any question this repository asks.
+            # One token has no ITL, so no TPOT: such a level answers nothing.
             raise ValueError(f"{self.name}: output_tokens < 2 leaves no decode step")
 
     @property
@@ -90,16 +67,7 @@ class Workload:
 
     @property
     def nominal_hit_rate(self) -> float:
-        """h the construction produces, once the prefixes are warm.
-
-        Warm is a precondition, not an assumption: the harness sends one request
-        per distinct prefix before the level's clock and its counter window
-        start, so the misses that seed the cache are outside the measurement.
-        Without that warmup the first request of each prefix drags h down by
-        num_prefixes / num_prompts, which at 60 requests and one prefix is 1.7%
-        -- small, and exactly the kind of small bias that gets attributed to the
-        engine later.
-        """
+        """h the construction produces once every prefix is warm (see warmup)."""
         return self.prefix_tokens / self.prompt_tokens
 
     @property
@@ -109,8 +77,8 @@ class Workload:
     def build(self) -> list[Request]:
         """The level's prompts: shared prefixes plus per-request unique bodies.
 
-        Deterministic in `seed`, so a level can be re-sent against a changed
-        server configuration and differ in nothing but the configuration.
+        Deterministic in `seed`: a level re-sent against a changed server
+        differs in nothing but the server.
         """
         rng = random.Random(self.seed)
         prefixes = [
@@ -133,17 +101,12 @@ class Workload:
         return requests
 
     def warmup(self) -> list[Request]:
-        """One request per distinct prefix, to seed the cache before measuring.
+        """One request per distinct prefix, sent before a level is measured.
 
-        The body is *not* any measured request's body: it is drawn from a
-        separate seed stream, so the warmup caches the prefix and nothing else.
-        Reusing a measured prompt here would give that one request a full hit and
-        lift the level's h above its nominal value by (1 - h) / num_prompts --
-        0.3% at 60 requests, which is smaller than the measurement and still a
-        bias with a known sign, removed rather than modelled.
-
-        Negative indices, so a warmup record can never be mistaken for a measured
-        one if the two ever land in the same file.
+        Skipping it drags h below nominal by num_prefixes / num_prompts; bodies
+        come from a separate seed stream, or a measured prompt would get a full
+        hit and lift h by (1 - h) / num_prompts. Negative indices keep warmup
+        records apart from measured ones if both land in one file.
         """
         rng = random.Random(self.seed + 1)
         prefixes = [req.prompt_ids[:self.prefix_tokens]
