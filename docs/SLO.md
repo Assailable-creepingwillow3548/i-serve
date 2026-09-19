@@ -867,7 +867,10 @@ the same three, held to 0.24%.
 - [ ] **Price prefix caching against a distribution of prefixes**, not one. Run 3
       shared a single 3 200-token prefix across every request, which measures the
       ceiling of what `h` is worth; a fleet holds several prefixes and evicts
-      between them
+      between them. The sheet that faces it is written and unreviewed:
+      [benchmarks/runsheets/mi300x-run-3.md](benchmarks/runsheets/mi300x-run-3.md),
+      2026-09-19, where the working set is the swept variable and the routing
+      policy decides how much of it each replica has to hold
 - [ ] Re-derive `max_num_seqs` for the interactive class at 1 500 tokens, the
       prompt length run 2 showed is the only one this card can serve interactively
 - [x] Define the alert rule: which SLI, which window, which burn rate — §4

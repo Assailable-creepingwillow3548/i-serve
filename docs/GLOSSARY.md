@@ -484,6 +484,26 @@ window, and reported beside it — the two are independent routes to one quantit
 so a gap between them is a defect in the workload rather than a finding about the
 engine (`bench/scenarios/`).
 
+**Working set** (of prefixes) — how many *distinct* prompt prefixes the traffic
+touches in a window. `h` is what one prefix is worth; the working set is how many
+of them a replica is asked to keep at once, and it decides whether prefix-aware
+routing buys anything: a set small enough to fit on every replica makes affinity
+a no-op ([SLO.md](SLO.md) §6, channel 2; the arithmetic is table 11 of
+`bench/predictions.py`).
+
+**LRU** (least recently used) — the eviction order a cache uses when it must
+free space: the block untouched for longest goes first. It is why a working set
+larger than the pool costs hit rate rather than memory, and why a workload that
+asks for its prefixes in strict rotation measures the worst case — each one is
+evicted exactly before it is next needed. **Which order vLLM's block pool
+actually uses has not been read here** at the pinned tag, so every hit-rate
+prediction over a working set inherits it as an assumption ⏳.
+
+**Zipf distribution** — the popularity shape real prompt traffic has: a few
+prefixes carry most requests and a long tail carries the rest. Between a uniform
+draw and a strict rotation, which is why a benchmark that uses either states
+which of the two it measured ⏳.
+
 **Prefill interference** — the amount by which a request's average decode step
 exceeds the step the hardware performs, because prefill chunks of *other*
 requests land in the same steps. Measured directly as TPOT minus median ITL, and
@@ -933,8 +953,8 @@ gateways (llm-d, AIBrix, vLLM production-stack) build on it rather than on
 Ingress: it can route on model identity and cache locality, which an Ingress
 cannot express.
 
-**Prefix-aware routing** — choosing the replica that already holds a request's
-prompt prefix in its KV cache, instead of choosing by turn. What it is worth is
+**Prefix-aware routing** (also *affinity*) — choosing the replica that already
+holds a request's prompt prefix in its KV cache, instead of choosing by turn. What it is worth is
 the gap between the `h` = 0 and `h` = 0.8 columns of [SLO.md](SLO.md) §6; the
 implementation and its limits are `router/README.md`.
 
@@ -972,6 +992,12 @@ prefix yields an identical token prefix up to the token straddling the cut
 five routing policies produced the choice: `prefix`, or one of four reasons the
 request fell back to `round_robin`. The list, and why four and not one, is
 `router/README.md` §1.
+
+**`-policy`** (`prefix-router`) ⏳ — which routing policy to apply to keyed
+requests: `prefix`, or `round_robin` as a deliberate choice rather than a
+fallback. It exists so that a measurement can compare two policies over one
+fleet through one hop, differing in the policy alone
+(`docs/benchmarks/runsheets/mi300x-run-3.md` §0).
 
 **`X-Router-Upstream`** (`prefix-router`) — the response header naming the
 replica the request was sent to. Read together with `X-Router-Policy`: the
@@ -1278,7 +1304,7 @@ above assume exactly that (*Architectures that break the standard arithmetic*).
 
 **`--what-if`** (`bench/predictions.py`) — prints one operating point of the
 reader's choosing — card, context length, prompt length, TPOT and TTFT targets,
-`gpu_memory_utilization`, KV dtype, hourly rate — instead of the nine fixed
+`gpu_memory_utilization`, KV dtype, hourly rate — instead of the eleven fixed
 tables. The tables take no parameters on purpose: `docs/SLO.md` quotes their
 rows, so a flag that moved them would be a flag that edits a derivation. Every
 line it prints is still a floor.
@@ -1292,6 +1318,17 @@ step reads.
 the same answer as data: the operating point as the dict `what_if_point()`
 returns, or the dry-run plan with its per-level verdicts. Both are the forms the
 site's export and its golden grid are built from.
+
+**`--metrics-endpoint`** (`bench/harness.py`) ⏳ — an engine to scrape `/metrics`
+from, repeatable, separate from the address the load is sent to. Needed the
+moment a router sits in front of a fleet: the load endpoint is then one hop, and
+the counters live on several engines behind it
+(`docs/benchmarks/runsheets/mi300x-run-3.md` §0).
+
+**`--expect-policy`** (`bench/harness.py`) ⏳ — the `X-Router-Policy` every
+response of a level must carry, or the level is invalid. Turns a routing arm
+from something believed into something checked: an arm that silently fell back
+to round robin produces a complete, plausible level otherwise.
 
 **`--no-warmup`** (`bench/harness.py`) — skips the request that seeds a level's
 shared prefix. Only for measuring a cold cache deliberately: without the seed the

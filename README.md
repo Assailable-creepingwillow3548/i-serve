@@ -82,7 +82,7 @@ number read wrong.
   *don't know* as a real answer, and hands back one symptom's branch and the
   knobs it points at.
 - **In docs**: [docs/runbook.md](docs/runbook.md) for the alert to the map,
-  [docs/symptom-map.md](docs/symptom-map.md) for the 68 nodes.
+  [docs/symptom-map.md](docs/symptom-map.md) for the 69 nodes.
 
 **The honest limit.** Nothing here shortens the control loop — scrape, KEDA poll,
 HPA window and a 69 s cold start are minutes, and a burst shorter than that is
@@ -200,7 +200,7 @@ with what it is and how far it got.
 | `docs/accelerator-landscape.md` | Which term of the decode equation each vendor attacks | ✅ snapshot, dated 2026-08-23 |
 | `docs/architecture.md` | Request path from ingress to GPU | ✅ drawn from the running objects |
 | `docs/runbook.md` | Canary rollout, SLO-breach tree, morning triage, OOM | canary run once on `kind`; the OOM procedure not written |
-| `docs/symptom-map.md`, `.json` | The operator's decision tree, and the checked subset the site evaluates | 68 nodes; the JSON's 37 nodes held equal by a test |
+| `docs/symptom-map.md`, `.json` | The operator's decision tree, and the checked subset the site evaluates | 69 nodes; the JSON's 37 nodes held equal by a test |
 | `docs/running-on-kind.md` | The eleven commands, the two load-bearing waits, the stub contract | ✅ |
 | `docs/adding-a-run.md` | Why runs are what accumulate here, and the checklist | the MI300X run is its first user |
 | `docs/benchmarks/` | Load test reports, cost figures, and the chart above | runs 1–3 written up, raw evidence committed |

@@ -798,6 +798,101 @@ def test_prefix_cache_rejects_a_hit_rate_outside_zero_to_one():
 # ---------------------------------------------------------------------------
 
 
+# --- table 11: a fleet on one card --------------------------------------------
+#
+# The arrangement the router arm runs on (docs/benchmarks/runsheets/mi300x-run-3.md):
+# two engines sharing one MI300X, each with half the memory share. Nothing here
+# needs an interference fit, which is why these figures may be printed for a
+# card no run has touched -- they are capacity arithmetic, and the startup log
+# outranks every one of them on the day.
+
+
+def test_fleet_model_multiplies_the_weights_and_leaves_the_flops_alone():
+    """Two engines read two copies of the weights and compute one token once.
+
+    The whole content of predictions.fleet_model, and the one way it could be
+    wrong that no printed row would reveal: multiplying params_non_embedding
+    too would inflate the compute side of every floor, silently, by the replica
+    count.
+    """
+    fleet = predictions.fleet_model(QWEN3_8B, 2)
+    assert fleet.params_total == 2 * QWEN3_8B.params_total
+    assert fleet.params_non_embedding == QWEN3_8B.params_non_embedding
+    assert fleet.kv_bytes_per_token == QWEN3_8B.kv_bytes_per_token
+
+
+def test_a_second_engine_costs_exactly_one_more_copy_of_the_weights():
+    """The fleet's bill, on both limits, is 16.4 GB divided by a seat.
+
+    Both limits have the form (X - weights) / (context x kv_per_token) and
+    differ only in X (docs/SLO.md section 6), so a replica that adds `weights`
+    to the numerator's subtrahend costs the same seats in each -- at whatever
+    context that limit counts a seat in. Asserted rather than read off the
+    table, because it is the sentence the table's first block is for.
+    """
+    seat_capacity = QWEN3_8B.kv_bytes_per_token * 4200
+    seat_latency = QWEN3_8B.kv_bytes_per_token * 4000
+    fleet = predictions.fleet_model(QWEN3_8B, 2)
+
+    capacity_bill = concurrency_ceiling(QWEN3_8B, MI300X, 4200, 0.90) - \
+        concurrency_ceiling(fleet, MI300X, 4200, 0.90)
+    latency_bill = max_num_seqs_from_slo(QWEN3_8B, MI300X, 4000, INTERACTIVE_TPOT) - \
+        max_num_seqs_from_slo(fleet, MI300X, 4000, INTERACTIVE_TPOT)
+
+    assert abs(capacity_bill - QWEN3_8B.weights_bytes / seat_capacity) < 1.0, capacity_bill
+    assert abs(latency_bill - QWEN3_8B.weights_bytes / seat_latency) < 1.0, latency_bill
+    assert (capacity_bill, latency_bill) == (26, 28), (capacity_bill, latency_bill)
+
+
+def test_the_fleet_stays_capacity_bound_on_this_card():
+    """A second engine subtracts the same weights from both limits, so the 8 %
+    between them in docs/SLO.md section 6 does not close. If a fleet flipped the
+    MI300X to latency-bound, every sentence that section writes about this card
+    would need re-deriving, and the run would be about something else.
+    """
+    fleet = predictions.fleet_model(QWEN3_8B, 2)
+    seats = max_num_seqs(fleet, MI300X, 4200, INTERACTIVE_TPOT, 0.90)
+    assert seats.bound_by == "capacity", seats
+
+
+def test_affinity_repays_the_fleet_bill_only_past_a_working_set():
+    """Below ~35 distinct prefixes the second engine is a loss on one card.
+
+    Affinity stores each prefix once instead of once per replica, which is
+    (R - 1) x N x prefix_tokens of pool -- 0.76 seats per prefix at 3 200
+    tokens in a 4 200-token seat. It has to clear the 26-seat bill above before
+    the arrangement is worth anything at all, and that is the first number the
+    runsheet asks the run to face.
+    """
+    per_prefix = (2 - 1) * predictions.SHARED_PREFIX_TOKENS / 4200
+    break_even = 26 / per_prefix
+    assert 34.0 < break_even < 35.0, break_even
+
+
+def test_affinity_stops_buying_space_once_both_policies_fill_the_pool():
+    """Past the pool's room the gain changes form, from seats to hit rate.
+
+    The regime change table 11 exists to locate: while every prefix is retained
+    under both policies the saving is space; once round_robin is evicting, both
+    policies hold `room` prefixes, there is no space to differ over, and the
+    difference appears in h instead. A model that kept paying seats there would
+    double-count the same saving.
+    """
+    room, replicas = 96.0, 2
+    nominal = 0.8
+
+    def freed(n):
+        return replicas * (min(n, room) - min(n / replicas, room))
+
+    def hit_rates(n):
+        return (nominal * min(1.0, room / n), nominal * min(1.0, room * replicas / n))
+
+    assert freed(64) > 0 and hit_rates(64) == (nominal, nominal)
+    assert freed(512) == 0
+    rr, prefix = hit_rates(512)
+    assert prefix == 2 * rr > 0, (rr, prefix)
+
+
 def test_what_if_agrees_with_table_3_on_the_same_operating_point():
     """A second path to a number is a second chance to get it wrong.
 
@@ -827,14 +922,23 @@ def test_what_if_defaults_reserve_room_to_generate():
 
 
 def test_what_if_parameters_cannot_reach_the_fixed_tables():
-    """docs/SLO.md quotes the ten tables' rows, so a parameter that moved them
+    """docs/SLO.md quotes the eleven tables' rows, so a parameter that moved them
     would be a parameter that edits a derivation. Passing one without
     --what-if has to fail loudly rather than print the unchanged tables.
     """
+    # argparse prints its usage and its message to stderr before it exits, and
+    # a suite that looks like it crashed while passing is a suite people stop
+    # reading. Swallowed here rather than globally: this is the one test whose
+    # subject is the error text.
+    import contextlib
+    import io
+
     try:
-        predictions.main(["--accelerator", "mi300x"])
+        with contextlib.redirect_stderr(io.StringIO()) as noise:
+            predictions.main(["--accelerator", "mi300x"])
     except SystemExit as exc:
         assert exc.code != 0, "a parameter without --what-if exited clean"
+        assert "--what-if" in noise.getvalue(), noise.getvalue()
         return
     raise AssertionError("--accelerator without --what-if printed the tables")
 

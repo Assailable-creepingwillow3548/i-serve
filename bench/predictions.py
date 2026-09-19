@@ -1,4 +1,4 @@
-"""Every number bench/roofline.py predicts, printed as ten numbered tables.
+"""Every number bench/roofline.py predicts, printed as eleven numbered tables.
 
 Split out of roofline.py because the two change for different reasons: the
 module changes when the physics or the arithmetic does, this file changes after
@@ -38,6 +38,7 @@ from roofline import (
     L40S,
     L40S_RUN1,
     MI300X,
+    Model,
     QWEN2_5_7B,
     QWEN3_8B,
     aggregate_tokens_per_sec,
@@ -56,6 +57,30 @@ from roofline import (
 TTFT_TARGET = 0.300         # section 2, interactive
 TPOT_TARGET = 0.050         # section 2, interactive
 GMU = 0.90                  # the gpu_memory_utilization the runsheet serves at
+
+# The derived KV pool is an over-estimate, and by how much is a measurement:
+# the L40S startup log came in 7.6 % below bench/roofline.py's clean arithmetic
+# (docs/benchmarks/l40s-baseline.md section 2), because non-torch memory, the
+# activation peak and the CUDA graph pool are paid on any card and none of them
+# is modelled. 7 % is the haircut tables 9 and 11 apply before predicting a
+# shelf; the engine's own log still outranks both figures (docs/SLO.md
+# section 9).
+POOL_SHORTFALL = 0.07
+
+# The fleet table's arrangement: two engines on one accelerator, which is the
+# smallest fleet a router can route over and the only one a single-GPU droplet
+# can hold. The prefix length is run 3's -- 3 200 tokens of a 4 000-token
+# prompt, the construction that measured h = 0.800 on every cached level
+# (bench/scenarios/prefix_sweep.py).
+FLEET_REPLICAS = 2
+SHARED_PREFIX_TOKENS = 3_200
+
+# The concurrency table 11's working-set rows are taken at: 64 seats across the
+# fleet, 32 per engine. Fixed rather than swept because the table's variable is
+# the working set, and because both engines are far inside their own latency
+# limits there -- so what the rows show is the pool filling, which is the
+# quantity the routing policy actually moves.
+FLEET_CONCURRENCY = 64
 
 # The two workload classes of docs/SLO.md section 2, verbatim, keyed so that the
 # calculator's preset buttons and bench/export_site_data.py read them from here
@@ -516,11 +541,10 @@ def mi300x_sweep_table() -> None:
     ctx, out = 4000, 200
     levels = (1, 8, 32, 64, 128, 192, 224, 240, 256, 288)
     default_max_num_seqs = 256
-    pool_shortfall = 0.07     # L40S run 1: derived pool 7.6 % above the logged one
 
     pool = kv_cache_tokens(QWEN3_8B, MI300X, GMU)
     seats_derived = concurrency_ceiling(QWEN3_8B, MI300X, ctx + out, GMU)
-    seats_corrected = int(pool * (1 - pool_shortfall) // (ctx + out))
+    seats_corrected = int(pool * (1 - POOL_SHORTFALL) // (ctx + out))
     by_latency = max_num_seqs_from_slo(QWEN3_8B, MI300X, ctx, TPOT_TARGET)
 
     table_header(
@@ -529,7 +553,7 @@ def mi300x_sweep_table() -> None:
         f"{MI300X.achieved_bandwidth} and mfu {MI300X.mfu}. The pool seats "
         f"{seats_derived} sequences of {ctx + out} tokens by the clean "
         f"arithmetic and about {seats_corrected} once the L40S's "
-        f"{pool_shortfall:.0%} startup-log shortfall is applied; the latency "
+        f"{POOL_SHORTFALL:.0%} startup-log shortfall is applied; the latency "
         f"limit at 50 ms is {by_latency}. So the prediction is the inverse of "
         f"the L40S's: every level inside the pool stays inside the SLO, and the "
         f"first thing to break is capacity, not latency. The default "
@@ -554,10 +578,157 @@ def mi300x_sweep_table() -> None:
               f"{inside:>14}{fits:>17}{queue:>17}")
 
     print()
-    print(f"  KV pool {pool:,.0f} tokens derived, ~{pool * (1 - pool_shortfall):,.0f} "
-          f"after the {pool_shortfall:.0%} shortfall -> logged maximum concurrency "
-          f"{pool / 9000:.1f}x derived, ~{pool * (1 - pool_shortfall) / 9000:.1f}x "
+    print(f"  KV pool {pool:,.0f} tokens derived, ~{pool * (1 - POOL_SHORTFALL):,.0f} "
+          f"after the {POOL_SHORTFALL:.0%} shortfall -> logged maximum concurrency "
+          f"{pool / 9000:.1f}x derived, ~{pool * (1 - POOL_SHORTFALL) / 9000:.1f}x "
           f"corrected, at max_model_len 9 000 (checkpoint A)")
+
+
+def fleet_model(model: Model, replicas: int) -> Model:
+    """The aggregate a card sees when `replicas` engines serve one model on it.
+
+    Only params_total moves, and that asymmetry is the whole content of this
+    helper. Every engine holds and reads its *own* copy of the weights, so the
+    memory side of every formula is multiplied by the replica count -- both the
+    bytes a decode step reads and the bytes the pool does not get. The compute
+    side is not: a token costs the same FLOPs whichever engine computes it, so
+    params_non_embedding stands, and so does kv_bytes_per_token, which is an
+    architecture fact and knows nothing about processes.
+
+    Valid for engines on ONE accelerator, which is the only arrangement where a
+    single card's bandwidth and a single card's capacity are shared. Two engines
+    on two cards are two instances of `model`, and this helper would say
+    something false about them.
+    """
+    if replicas < 1:
+        raise ValueError("a fleet has at least one engine")
+    return replace(model,
+                   name=f"{model.name} x{replicas} on one card",
+                   params_total=model.params_total * replicas)
+
+
+def fleet_router_table() -> None:
+    """What a second engine costs and what affinity buys back -- runsheet mi300x-run-3.
+
+    The first table here whose subject is an arrangement rather than a card: two
+    engines on one MI300X at half the memory share each, which is the smallest
+    fleet a router has anything to say about. Both halves are capacity
+    arithmetic and neither needs an interference fit, which is why this table
+    can be printed for the MI300X at all -- the seat count at a given h cannot
+    (INTERFERENCE_FITS has no entry for this card, on purpose).
+
+    The two halves answer one question in two regimes, and the regime is set by
+    the working set: how many distinct prompt prefixes the traffic touches.
+    Below the pool's capacity for them, round_robin's cost is *space* -- it
+    stores every prefix on every engine -- and affinity buys seats back. Above
+    it, the pool is full either way and the cost moves into the hit rate, which
+    is what docs/SLO.md section 6 converts into seats and dollars.
+    """
+    ctx, prompt = 4200, 4000
+    replicas = FLEET_REPLICAS
+    prefix = SHARED_PREFIX_TOKENS
+    nominal_h = prefix / prompt
+    per_engine = FLEET_CONCURRENCY // replicas
+    working_sets = (32, 64, 128, 256, 512)
+
+    fleet = fleet_model(QWEN3_8B, replicas)
+    pool_one = kv_cache_tokens(QWEN3_8B, MI300X, GMU)
+    pool_fleet = kv_cache_tokens(fleet, MI300X, GMU)
+    cap_one = concurrency_ceiling(QWEN3_8B, MI300X, ctx, GMU)
+    cap_fleet = concurrency_ceiling(fleet, MI300X, ctx, GMU)
+    lat_one = max_num_seqs_from_slo(QWEN3_8B, MI300X, prompt, TPOT_TARGET)
+    lat_fleet = max_num_seqs_from_slo(fleet, MI300X, prompt, TPOT_TARGET)
+
+    # What one engine's share of the card holds, after the shortfall and after
+    # the live sequences have taken their reservation: the prefixes a replica
+    # can still be holding when the next request arrives. This is the K of the
+    # hit-rate model below, and it is a prediction of the same kind as the pool
+    # -- the startup log and the counters outrank it.
+    pool_per_engine = kv_cache_tokens(QWEN3_8B, MI300X, GMU / replicas)
+    live = per_engine * ctx
+    room = (pool_per_engine * (1 - POOL_SHORTFALL) - live) / prefix
+
+    table_header(
+        "TABLE 11: a fleet on one card, and what prefix affinity buys back",
+        f"{replicas} engines at gpu_memory_utilization {GMU / replicas:.2f} "
+        f"each against one at {GMU:.2f}, MI300X, uncalibrated eff_mem "
+        f"{MI300X.achieved_bandwidth} and mfu {MI300X.mfu}, seats of {ctx} "
+        f"reserved tokens. A second engine reads and stores a second copy of "
+        f"the {QWEN3_8B.weights_bytes / 1e9:.1f} GB of weights, so the fleet "
+        f"pays for them twice on both limits -- that is the bill below, and it "
+        f"is charged whatever the routing policy is. What the policy decides is "
+        f"the second half: round_robin puts every prefix on every engine, "
+        f"affinity puts it on one. Capacity arithmetic throughout, so no "
+        f"interference fit is borrowed from another card. docs/SLO.md "
+        f"section 6, channel 2.",
+        f"{'arrangement':>14}{'KV pool':>14}{'latency seats':>16}"
+        f"{'capacity seats':>17}{'binds':>12}",
+    )
+    for label, pool, lat, cap in (
+            ("1 engine", pool_one, lat_one, cap_one),
+            (f"{replicas} engines", pool_fleet, lat_fleet, cap_fleet)):
+        binds = "capacity" if cap <= lat else "latency"
+        print(f"{label:>14}{pool:>14,.0f}{lat:>16}{cap:>17}{binds:>12}")
+
+    bill = cap_one - cap_fleet
+    recovered_per_prefix = (replicas - 1) * prefix / ctx
+    break_even = bill / recovered_per_prefix
+
+    print()
+    # The two figures differ only in what a seat costs in each limit: capacity
+    # reserves the whole {ctx}-token seat, the decode step reads the {prompt}
+    # tokens of context that exist while it runs. Same numerator both times --
+    # one more copy of the weights.
+    print(f"  the bill: {bill} seats of capacity (a {ctx}-token seat) and "
+          f"{lat_one - lat_fleet} of latency ({prompt} tokens of context), "
+          f"both of them the second {QWEN3_8B.weights_bytes / 1e9:.1f} GB "
+          f"divided by what a seat costs in that limit")
+    # The same bill in the unit block A measures it in. A decode step reads one
+    # copy of the weights per engine, so the pair's step is the single engine's
+    # plus weights / (bandwidth x eff_mem) -- and that difference, unlike the
+    # seat counts above, is what a median ITL at matched total concurrency can
+    # be compared against directly.
+    step_one = tpot_floor(QWEN3_8B, MI300X, FLEET_CONCURRENCY, prompt)
+    step_fleet = tpot_floor(fleet, MI300X, FLEET_CONCURRENCY, prompt)
+    print(f"  at {FLEET_CONCURRENCY} seats across the fleet the decode step "
+          f"goes {step_one.seconds * 1e3:.2f} -> {step_fleet.seconds * 1e3:.2f} ms "
+          f"(+{(step_fleet.seconds - step_one.seconds) * 1e3:.2f} ms, "
+          f"+{step_fleet.seconds / step_one.seconds - 1:.0%}), the second "
+          f"weights read at eff_mem {MI300X.achieved_bandwidth}")
+    print(f"  one engine holds {pool_per_engine:,.0f} tokens derived, "
+          f"~{pool_per_engine * (1 - POOL_SHORTFALL):,.0f} after the "
+          f"{POOL_SHORTFALL:.0%} shortfall; at {per_engine} live seats that "
+          f"leaves room for {room:.0f} retained prefixes of {prefix:,} tokens")
+    print()
+    print(f"  the working set, at {FLEET_CONCURRENCY} seats across the fleet "
+          f"({per_engine} per engine) and a nominal h of {nominal_h:.2f}:")
+    print()
+    print(f"{'prefixes N':>12}{'per engine: rr / prefix':>26}{'h rr':>10}"
+          f"{'h prefix':>11}{'seats recovered':>18}")
+    for n in working_sets:
+        seen_rr = min(n, room)
+        seen_prefix = min(n / replicas, room)
+        h_rr = nominal_h * min(1.0, room / n)
+        h_prefix = nominal_h * min(1.0, room * replicas / n)
+        # What affinity leaves free that round_robin does not, counted per
+        # engine and then over the fleet. It goes to zero once both policies
+        # saturate the pool -- there is no space left to differ over, and the
+        # same saving reappears in the two h columns to the left, which is the
+        # regime change this table exists to locate.
+        recovered = replicas * (seen_rr - seen_prefix) * prefix / ctx
+        print(f"{n:>12}{f'{seen_rr:.0f} / {seen_prefix:.0f}':>26}{h_rr:>10.3f}"
+              f"{h_prefix:>11.3f}{recovered:>18.1f}")
+
+    print()
+    print(f"  affinity repays the fleet's {bill}-seat bill at N >= "
+          f"{break_even:.1f} prefixes ({recovered_per_prefix:.2f} seats each): "
+          f"below that, two engines on one card are a loss that no routing "
+          f"policy recovers")
+    print(f"  the h columns assume a prefix is as likely to be asked for next "
+          f"as any other. The harness draws them in strict rotation instead "
+          f"(bench/scenarios/__init__.py), which is LRU's worst case: both "
+          f"columns fall to 0 rather than to a share, round_robin past N = "
+          f"{room:.0f} and affinity past N = {room * replicas:.0f}")
 
 
 def _finite(value: float | None) -> float | None:
@@ -760,7 +931,7 @@ def what_if(accelerator: str = "l40s-run1",
             hit_rate: float = 0.0) -> None:
     """One operating point, named on the command line, answered three ways.
 
-    The ten tables above print the operating points *this document* argues
+    The eleven tables above print the operating points *this document* argues
     about, and docs/SLO.md quotes their rows -- which is exactly why none of
     them takes a parameter. This one takes nothing else. It answers the question
     a reader actually arrives with, about their card at their context length,
@@ -864,7 +1035,7 @@ def what_if(accelerator: str = "l40s-run1",
 
 
 def main(argv=None) -> int:
-    """No arguments prints the ten tables; --what-if prints one chosen point.
+    """No arguments prints the eleven tables; --what-if prints one chosen point.
 
     The default is byte-identical to what this file printed before the flags
     existed, deliberately: step 0 of every runsheet opens these tables beside a
@@ -913,7 +1084,7 @@ def main(argv=None) -> int:
                              "rows of")
     args = parser.parse_args(argv)
 
-    # A parameter without --what-if would silently print the ten tables it
+    # A parameter without --what-if would silently print the eleven tables it
     # cannot touch, which is the one outcome worth an error rather than a shrug.
     # --json is a store_true, so it is False rather than None when absent and
     # has to be looked at on its own.
@@ -924,7 +1095,7 @@ def main(argv=None) -> int:
                 (["--json"] if args.json else [])
         parser.error(f"{', '.join(flags)} "
                      f"{'mean' if len(flags) > 1 else 'means'} nothing without "
-                     "--what-if: the ten tables are fixed operating points "
+                     "--what-if: the eleven tables are fixed operating points "
                      "and take no parameters")
 
     if args.what_if:
@@ -950,6 +1121,7 @@ def main(argv=None) -> int:
                   mi300x_sweep_table):
         table()
     sweep_length_table(MI300X, batch=1, number=10)
+    fleet_router_table()
     print()
     return 0
 
