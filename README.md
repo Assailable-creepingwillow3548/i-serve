@@ -14,7 +14,7 @@ and the operator's three questions in the order they arrive:
 Thirty seconds, all three, nothing installed —
 [the page](https://alexgitspace.github.io/i-serve/):
 
-[![The page: describe your situation in one sentence, and it works out the trade between speed, seats and money — shot 2026-09-16](docs/page.jpg)](https://alexgitspace.github.io/i-serve/)
+[![The page, recorded 2026-09-20: the card and the cache change on the first screen, the sentence follows as a pinned bar, the seats chart and the cost move under the knobs, and one answered symptom brings up its advice](docs/page.gif)](https://alexgitspace.github.io/i-serve/)
 
 Five minutes to an evening: [pick a route](#pick-a-route).
 

@@ -42,16 +42,24 @@ is `data-repo` on `<body>` (`index.html`).
 
 ## The picture of it in the README
 
-`docs/page.jpg` is the front page's first image and the route to Pages. It is a
-screenshot, not a generated file: nothing in CI holds it equal to the page, so
-re-shoot it whenever the first screen changes, and carry the date in its alt
+`docs/page.gif` is the front page's first image and the route to Pages. It is a
+recording, not a generated file: nothing in CI holds it equal to the page, so
+re-record it whenever the first screen changes, and carry the date in its alt
 text.
 
+    python3 -m http.server -d site 8000 &
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-      --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 \
-      --window-size=1280,980 --virtual-time-budget=4000 \
-      --screenshot=/tmp/page.png file://$PWD/site/index.html
-    sips -Z 1280 -s format jpeg -s formatOptions 80 /tmp/page.png --out docs/page.jpg
+      --headless --disable-gpu --hide-scrollbars --remote-debugging-port=9222 \
+      --window-size=1280,900 http://127.0.0.1:8000/ &
+    node site/tools/record-page.mjs      # the tour, as PNGs in /tmp/page-frames
+    python3 site/tools/make-gif.py       # docs/page.gif
 
-The window height is chosen so the frame ends below step 1's three numbers: a
-figure cut through a number reads as a fault rather than a fold.
+`record-page.mjs` needs Node 22 for its built-in WebSocket and nothing else. It
+drives the page over the DevTools protocol, so every frame is the page answering
+a real click. `make-gif.py` needs Pillow — the one dependency in the tree, a
+contributor's tool only: `bench/`, `site/` and CI still install nothing.
+
+The storyboard inside `record-page.mjs` is what a reader is meant to try, in the
+order the page answers it. Scrolling is what the file weighs: 16 of its 95
+frames move the page and carry almost all of the megabyte, while a repeated
+frame is free. A longer pause is cheap; one more scroll is not.
