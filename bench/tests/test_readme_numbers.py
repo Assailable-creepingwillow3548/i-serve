@@ -1,29 +1,16 @@
 """The front page quotes numbers it does not own; this is what stops them drifting.
 
-`README.md` is a shop window, so it restates figures whose home is `bench/` and
-`docs/SLO.md` -- twelve of them. The repository otherwise forbids that (one fact,
-one file), and the page under `site/` is exempt only because three guards hold it
-equal to the Python. The README had no guard at all: CI ran its *commands* and
-asserted none of its *numbers*.
-
-The obvious check is the wrong one, for the reason its sibling
-`test_plot_predicted_vs_measured.py` documents: a bare "12" or "0.39" is a
-substring of half the file. Every probe below therefore carries prose either side
-of the number, is built by f-string from the Python that owns it, and declares
-**how many times** it must occur -- because 12, 32 and 64 each appear in more
-than one sentence, and editing either copy has to fail.
-
-What this cannot catch, and nothing here pretends otherwise: a number that is
-right inside a sentence that is wrong about it. On 2026-09-16 the front page said
-run 3's seat count "came out 56 % low" where `docs/SLO.md` section 9 says 56 %
-*higher*; the number was correct and only a human reading caught the direction.
+README.md and docs/layout.md restate figures whose home is bench/ and docs/SLO.md,
+the one exemption from one-fact-one-file that site/ also enjoys under its own
+guards. A bare "12" or "0.39" is a substring of half the page, so every probe
+carries prose either side of the number, is built by f-string from the module
+that owns it, and declares how many times it must occur (the trap is documented
+in test_plot_predicted_vs_measured.py). A right number inside a wrong sentence
+is beyond it: only a reading catches a direction.
 """
 
-# Two ways in, and both have to work. `pytest bench/` gets bench/ on the import
-# path from tests/conftest.py; `python3 bench/tests/test_readme_numbers.py` on a
-# rented pod, where pytest is not installed, gets only this directory. The three
-# lines below are what make the second one work, and they are here rather than in
-# conftest.py for exactly that reason.
+# Run directly on a pod without pytest, this file gets only its own directory on
+# the path; conftest.py is not consulted, so the two inserts live here.
 import pathlib as _pathlib
 import sys as _sys
 
@@ -159,12 +146,7 @@ def test_the_header_a_reader_types_is_what_the_harness_prints():
 
 
 def test_a_mutated_value_is_actually_caught():
-    """Perturb each probe's first digit; a probe that still matches checks nothing.
-
-    The "2.00" trap from test_plot_predicted_vs_measured.py, transposed: a probe
-    whose number is surrounded by too little prose can be satisfied by a
-    neighbouring sentence, and would then pass over an edited README.
-    """
+    """Perturb each probe's first digit; a probe that still matches checks nothing."""
     readme = _readme()
     problems = []
     for probe, _want, source in _claims():
@@ -189,10 +171,8 @@ def test_no_probe_is_a_bare_number():
 def test_the_symptom_count_is_quoted_from_the_map_not_invented():
     """"seven symptoms" has no Python home, so it is held to the map's own sentence.
 
-    Counting `## ` headings in the map gives seven only because *After any
-    deliberate change* is counted as a symptom, and the JSON's checked subset
-    lists five. Asserting that arithmetic would freeze a coincidence; asserting
-    that README and the map use the same words cannot.
+    Counting the map's headings gives seven only by coincidence, so the words
+    are compared, not the arithmetic.
     """
     readme = _readme()
     map_md = re.sub(r"\s+", " ",
