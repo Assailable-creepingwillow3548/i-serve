@@ -128,6 +128,9 @@ from memory each time, so decode is typically **memory-bound**.
 
 ## Latency and throughput metrics
 
+**Seat** — one conversation held at the same time as the others; the unit
+concurrency, ceilings and cost per seat are counted in.
+
 **TTFT** (Time To First Token) — from request arrival to the first token reaching
 the client. Dominated by queue wait plus prefill. What a user perceives as "did it
 hang?".
@@ -265,6 +268,9 @@ alert resolves at the first evaluation after its expression turns empty.
 ---
 
 ## Hardware and performance model
+
+**L40S** — NVIDIA's 48 GB data-centre GPU, the card runs 1–3 rented. **MI300X** —
+AMD's 192 GB accelerator, the card the next runsheet is written for.
 
 **Coefficient provenance** — whether an empirical coefficient is *measured* on
 the card it is used for or is a *prior* carried from a spec sheet. A property of
@@ -721,6 +727,13 @@ RunPod "pod" is not one of these** — it is a single rented container on a GPU 
 the word borrowed rather than the concept. The collision matters wherever a
 rented host and a cluster are discussed in the same sentence.
 
+**vLLM** — the inference server this stack deploys; the stub below stands in
+for it on `kind`.
+
+**Stub** — the container that replaces vLLM on `kind`: it carries the engine's
+API shape, health semantics, metric names and drain behaviour, and serves no
+model.
+
 **`kind`** (Kubernetes in Docker) — a cluster running inside local containers, with
 no GPU. Used here to debug manifests and controller logic for free, so that GPU
 time is spent only on runs that need a GPU.
@@ -1086,6 +1099,9 @@ the first visible one.
 ---
 
 ## Operations
+
+**Run** — one paid session on a rented card, numbered in order (runs 1–3 so
+far); each is preceded by a runsheet and followed by a report.
 
 **Sweep** — a series of benchmark runs that steps **one** parameter through a range
 while every other input is held fixed, so the resulting curve is attributable to
