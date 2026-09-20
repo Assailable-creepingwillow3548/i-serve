@@ -836,6 +836,35 @@
     markTerms(document.querySelector("main"));
   }
 
+  function bindStickySituation() {
+    const sit = document.querySelector(".situation");
+    const spacer = document.createElement("div");
+    spacer.className = "sit-spacer";
+    sit.parentNode.insertBefore(spacer, sit);
+    let pinned = false;
+    const restTop = () => spacer.getBoundingClientRect().top + window.scrollY;
+    function check() {
+      if (!pinned && window.scrollY > restTop()) {
+        spacer.style.height = sit.offsetHeight + "px";   // measured before it leaves the flow
+        document.body.classList.add("pinned");
+        pinned = true;
+      } else if (pinned && window.scrollY <= restTop()) {
+        document.body.classList.remove("pinned");
+        spacer.style.height = "0px";
+        pinned = false;
+      }
+    }
+    function unpin() {
+      if (!pinned) return;
+      document.body.classList.remove("pinned");
+      spacer.style.height = "0px";
+      pinned = false;
+    }
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", () => { unpin(); check(); });
+    check();
+  }
+
   readHash();
   bindSteps();
   bindPops();
@@ -845,6 +874,7 @@
   bindInputs();
   bindFlow();
   bindPin();
+  bindStickySituation();
   bindTooltips();
   renderSelftest();
   renderNav();

@@ -37,7 +37,7 @@
 <section class="step" id="step-situation">
   <p class="lede">Running an AI model on a rented GPU is a trade between speed, how many people you serve at once, and money. Describe your situation, and the page works out the trade.</p>
   <div class="situation">
-    <p class="sentence">I serve
+    <p class="sentence"><span class="glue">I serve</span>
       <span class="edit-wrap"><button type="button" class="edit" data-pop="pop-model" aria-expanded="false" id="v-model">—</button>
         <span class="badge" id="model-badge"></span>
         <span class="pop" id="pop-model" hidden>
@@ -45,38 +45,38 @@
           <span class="hint" id="model-prov"></span>
           <span class="hint">Pricing a model is not serving it: the second one is arithmetic over its config, never run here.</span>
         </span></span>
-      on one
+      <span class="glue">on one</span>
       <span class="edit-wrap"><button type="button" class="edit" data-pop="pop-accelerator" aria-expanded="false" id="v-accelerator">—</button>
         <span class="badge" id="accel-badge"></span>
         <span class="pop" id="pop-accelerator" hidden>
           <label><span class="lab">card</span><select id="accelerator"></select></label>
           <span class="hint" id="accel-prov"></span>
         </span></span>
-      that costs me
-      <span class="edit-wrap"><button type="button" class="edit mono" data-pop="pop-rate" aria-expanded="false" id="v-rate">—</button>
+      <span class="glue">that costs me</span>
+      <span class="edit-wrap" data-pin-label="$/h"><button type="button" class="edit mono" data-pop="pop-rate" aria-expanded="false" id="v-rate">—</button>
         <span class="pop" id="pop-rate" hidden>
           <label><span class="lab">$ per hour</span><span class="row"><input type="number" id="rate" min="0.01" step="0.01"><button type="button" class="small" id="rate-reset">card default</button></span></label>
           <span class="hint" id="rate-prov"></span>
         </span></span>
-      an hour. A typical prompt is
-      <span class="edit-wrap"><button type="button" class="edit mono" data-pop="pop-prompt" aria-expanded="false" id="v-prompt">—</button>
+      <span class="glue">an hour. A typical prompt is</span>
+      <span class="edit-wrap" data-pin-label="prompt tok"><button type="button" class="edit mono" data-pop="pop-prompt" aria-expanded="false" id="v-prompt">—</button>
         <span class="pop" id="pop-prompt" hidden>
           <label><span class="lab">prompt tokens</span><span class="row"><input type="range" id="prompt-range" min="0" max="1000"><input type="number" id="prompt" min="1" max="32768"></span></label>
           <span class="hint">Log scale, 128 to 32 768. Everything the model reads before it answers: system prompt, history, the question.</span>
         </span></span>
-      tokens and the answer
-      <span class="edit-wrap"><button type="button" class="edit mono" data-pop="pop-output" aria-expanded="false" id="v-output">—</button>
+      <span class="glue">tokens and the answer</span>
+      <span class="edit-wrap" data-pin-label="answer tok"><button type="button" class="edit mono" data-pop="pop-output" aria-expanded="false" id="v-output">—</button>
         <span class="pop" id="pop-output" hidden>
           <label><span class="lab">output tokens</span><span class="row"><input type="range" id="output-range" min="1" max="4096"><input type="number" id="output" min="1"></span></label>
           <span class="hint">A seat reserves room for prompt plus answer.</span>
-        </span></span>;
-      about
-      <span class="edit-wrap"><button type="button" class="edit mono" data-pop="pop-hit" aria-expanded="false" id="v-hit">—</button>
+        </span></span><span class="glue">;</span>
+      <span class="glue">about</span>
+      <span class="edit-wrap" data-pin-label="cached"><button type="button" class="edit mono" data-pop="pop-hit" aria-expanded="false" id="v-hit">—</button>
         <span class="pop" id="pop-hit" hidden>
           <label><span class="lab">prefix cache hit rate, %</span><span class="row"><input type="range" id="hit-range" min="0" max="100" step="5"><input type="number" id="hit" min="0" max="100" step="5"></span></label>
           <span class="hint">The share of each prompt the card has already seen: a shared system prompt, the same examples. A property of your traffic, not of the card.</span>
         </span></span>
-      of each prompt repeats something the card has already seen.</p>
+      <span class="glue">of each prompt repeats something the card has already seen.</span></p>
     <div class="actions">
       <p class="hint">Change anything dotted. Every answer below follows. A token is about three quarters of an English word.</p>
       <span class="spacer"></span>
