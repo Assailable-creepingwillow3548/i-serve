@@ -1,7 +1,7 @@
-# Delete the download Job on kind. The stub serves no model, and applying the
-# base unchanged would pull 16.4 GB onto a laptop to satisfy a container that
-# never reads it. The PVC itself is kept: what is under test here is volume
-# binding and scheduling, and that is real on kind.
+# Delete the download Job on kind: the stub serves no model, and what the base
+# would otherwise pull onto a laptop is priced in docs/running-on-kind.md. The
+# PVC itself is kept: what is under test here is volume binding and scheduling,
+# and that is real on kind.
 $patch: delete
 apiVersion: batch/v1
 kind: Job

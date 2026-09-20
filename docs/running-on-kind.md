@@ -15,12 +15,31 @@ then firing, and the dashboard lighting the panels a stub can fill. Which parts
 are real and which are fixture: *What is real here* in the repository
 [README](../README.md), and [audience.md](audience.md).
 
+**Nothing is downloaded either, and that is also a decision rather than a side
+effect.** The base carries a Job that fills a volume with the weights before any
+server starts; the `kind` overlay deletes it
+(`deploy/manifests/overlays/kind/patch-no-fetch.yaml`), because **16.4 GB** would
+otherwise arrive on a laptop to satisfy a container that never reads a byte of
+it. The PVC is kept, because volume binding and scheduling are real here. What
+the cluster does pull is four ordinary container images and the two pinned
+manifests named below.
+
 ## Prerequisites
 
 `kind`, `kubectl`, `docker` and `curl` on `PATH`, and a Docker daemon actually
 running — `up.sh` checks all four before it touches anything, because a missing
-tool halfway through a bring-up is a partial cluster. Versions this was last
-brought up with, 2026-09-11:
+tool halfway through a bring-up is a partial cluster. Nothing else installs:
+there is no Go toolchain here even for the router, which builds inside its own
+image, and no `kustomize` binary, which `kubectl` has carried since v1.14.
+
+**A reachable network is the fifth prerequisite, and the preflight does not
+check it.** The node image, ingress-nginx at `controller-v1.15.1` and KEDA at
+`v2.20.2` are all fetched when they are applied, not vendored, so a blocked
+GitHub fails on the second or third command with the cluster already created —
+the same partial bring-up the preflight exists to prevent, arriving by the one
+door it does not watch.
+
+Versions this was last brought up with, 2026-09-11:
 
 | | Version |
 |---|---|
