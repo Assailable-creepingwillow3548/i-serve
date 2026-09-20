@@ -16,8 +16,9 @@ covers only the controller.
 The wait is required, not tidiness. The manifest installs an admission webhook
 with `failurePolicy: Fail`, so an Ingress applied before it serves is rejected —
 `connect: connection refused` from the API server, after the rest of the overlay
-has already been created. Where this sits in the full bring-up is the repository
-`README.md`, which holds the only copy of that order.
+has already been created. Where this sits in the full bring-up is
+[`../../docs/running-on-kind.md`](../../docs/running-on-kind.md), which holds the
+only copy of that order.
 
 The controller is a prerequisite and is not vendored, the same call made for KEDA
 (`../keda/README.md`): 700 lines copied in would only become a second thing to

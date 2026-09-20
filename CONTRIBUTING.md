@@ -54,6 +54,13 @@ link to it; SI base units in derivations; dense FLOPS rows, never the sparsity
 row; architecture from `config.json`; a derived floor never reported as a
 measurement; repository content in English.
 
+One consequence of the first of those is worth spelling out, because it is the
+failure mode a repository of pointers actually has: **a fact that moves is
+followed by a `grep` for its old address.** CI cannot catch this. A pointer into
+a file that still exists resolves cleanly while naming a fact that left it, and
+that is how three files came to say the bring-up order lived in `README.md`
+after it had moved to [docs/running-on-kind.md](docs/running-on-kind.md).
+
 And one rule about the evidence rather than the prose: **no file carries a
 credential.** Raw logs are captured terminal, so a key can arrive in a pull
 request without anyone typing it. `.githooks/no-secrets.sh` refuses the commit,

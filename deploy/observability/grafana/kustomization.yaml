@@ -1,6 +1,6 @@
 # Apply with:  kubectl apply -k deploy/observability/grafana
 # after ../prometheus, which owns the `monitoring` namespace and the server
-# the datasource below points at. The full order is the repository README.md.
+# the datasource below points at. The full order is docs/running-on-kind.md.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

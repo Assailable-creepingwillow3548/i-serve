@@ -292,6 +292,6 @@ figure is never reported as a measurement ([SLO.md](SLO.md) §9).
   nothing routes it to a person — there is no Alertmanager.
 - **A second edge replica.** `hostPort` is exclusive per node, so the controller
   is one Pod on one node by construction (`deploy/ingress/README.md`).
-- **The bring-up order.** It has exactly one copy, in the repository
-  `README.md`, including which two waits are load-bearing and why the two
-  admission webhooks fail differently.
+- **The bring-up order.** It has exactly one copy, in
+  [running-on-kind.md](running-on-kind.md), including which two waits are
+  load-bearing and why the two admission webhooks fail differently.
