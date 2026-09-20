@@ -1,8 +1,10 @@
 # i-serve
 
-A slice of an LLM inference operator's platform: one open-weights model served
-on Kubernetes, with every number derived from that model's `config.json` and the
-card under it; today that model is Qwen3-8B. It answers the operator's three
+A slice of an LLM inference operator's platform, centred on one piece of
+arithmetic: what an open-weights model costs to serve at a promised speed,
+derived from its `config.json` and the card under it and checked by runs on
+rented hardware; today that model is Qwen3-8B. Around it: a Kubernetes control
+plane, a prefix router, a dashboard, a runbook. It answers the operator's three
 questions in the order they arrive —
 [**1. Speed**](#1-speed--how-fast-should-each-word-appear),
 [**2. Cost**](#2-cost--what-does-a-million-tokens-cost-at-that-speed),
@@ -30,7 +32,8 @@ Numbers come in three kinds, never mixed:
   runsheet is reviewed, its run not made.
 
 `kind` runs the stack against a stub and shows what the system *does*, never
-what the numbers *are*. What it cannot show, and what is fixture:
+what the numbers *are*, and no card has ever been sent these manifests. What it
+cannot show, and what is fixture:
 [docs/audience.md](docs/audience.md#what-is-real-on-kind-and-what-is-not).
 
 ## 1. Speed — how fast should each word appear?
@@ -116,7 +119,7 @@ row, with each coefficient: §9 of every report in
 |---|---|---|
 | **Thirty seconds** | [the page](https://alexgitspace.github.io/i-serve/) | your situation as one editable sentence, the three questions above as three steps under it |
 | **Five minutes** | *Five minutes*, below | the performance model's answer for two cards, in one command |
-| **An evening** | `./up.sh` | the whole stack on `kind`, against a stub, no accelerator |
+| **An evening** | `./up.sh` | the whole stack on `kind`, against a stub: four tools, no accelerator, no weights |
 | **Deeper** | [docs/SLO.md](docs/SLO.md) | every number and its derivation |
 
 Each route in full, and who this is for: [docs/audience.md](docs/audience.md).

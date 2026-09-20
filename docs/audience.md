@@ -131,6 +131,14 @@ because a fabricated histogram would light eleven dashboard panels and mean
 nothing, where an absent series is merely absent. Which five panels of sixteen
 light on `kind` is the table in `deploy/observability/README.md`.
 
+**Never run at all:** `deploy/manifests/base/` is the GPU-node shape — the
+engine's image, the Job that fetches the weights, the accelerator request — and
+no card has ever been sent it. The runs in [benchmarks/](benchmarks/) were made
+against a server started by hand, with no Kubernetes anywhere in the picture
+([architecture.md](architecture.md) §6). So what is unvalidated here is not the
+stub, which is honest about what it is; it is the *pairing*. The engine and
+these manifests have never run together.
+
 **Consequence worth stating plainly:** of the three questions the repository
 promises to answer, exactly one — *what happens on a traffic spike* — can be
 demonstrated on `kind`, and it has two continuations: [symptom-map.md](symptom-map.md),
