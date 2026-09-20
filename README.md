@@ -3,17 +3,23 @@
 A slice of an LLM inference operator's platform, centred on one piece of
 arithmetic: what an open-weights model costs to serve at a promised speed,
 derived from its `config.json` and the card under it and checked by runs on
-rented hardware; today that model is Qwen3-8B. Around it: a Kubernetes control
-plane, a prefix router, a dashboard, a runbook. It answers the operator's three
-questions in the order they arrive —
-[**1. Speed**](#1-speed--how-fast-should-each-word-appear),
-[**2. Cost**](#2-cost--what-does-a-million-tokens-cost-at-that-speed),
-[**3. Trouble**](#3-trouble--it-got-slow-where-do-you-look-first).
+rented hardware; today that model is Qwen3-8B.
+
+Around it: a Kubernetes control plane, a prefix router, a dashboard, a runbook —
+and the operator's three questions in the order they arrive:
+[speed](#1-speed--how-fast-should-each-word-appear),
+[cost](#2-cost--what-does-a-million-tokens-cost-at-that-speed),
+[trouble](#3-trouble--it-got-slow-where-do-you-look-first).
+
+Thirty seconds, all three, nothing installed —
+[the page](https://alexgitspace.github.io/i-serve/):
 
 [![The page: describe your situation in one sentence, and it works out the trade between speed, seats and money — shot 2026-09-16](docs/page.jpg)](https://alexgitspace.github.io/i-serve/)
 
-**[Open the page →](https://alexgitspace.github.io/i-serve/)** — all three,
-draggable, nothing installed. Below is the stack behind them.
+Five minutes to an evening: [pick a route](#pick-a-route).
+
+What counts as a number here, and how the predictions have held:
+[what is real](#what-is-real-here), [the proof](#the-proof).
 
 ## What is real here
 
