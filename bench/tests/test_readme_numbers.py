@@ -47,10 +47,13 @@ import test_symptom_map as symptom_map_tests
 
 # --- the sources, each read from the module that owns it ----------------------
 
+FRONT_PAGES = ("README.md", "docs/layout.md")
+
+
 def _readme() -> str:
-    """The front page as one line, because several numbers wrap away from their
-    context and a probe must not depend on where the paragraph broke."""
-    return re.sub(r"\s+", " ", (export.ROOT / "README.md").read_text(encoding="utf-8"))
+    """Both pages as one line: a probe must not depend on where a paragraph broke."""
+    return re.sub(r"\s+", " ", " ".join(
+        (export.ROOT / name).read_text(encoding="utf-8") for name in FRONT_PAGES))
 
 
 def _claims() -> list[tuple[str, int, str]]:
@@ -201,10 +204,13 @@ def test_the_symptom_count_is_quoted_from_the_map_not_invented():
 
 
 def test_every_picture_and_document_the_front_page_names_exists():
-    readme = (export.ROOT / "README.md").read_text(encoding="utf-8")
-    missing = [target for target in re.findall(r"\]\(([^)#]+)\)", readme)
-               if not target.startswith(("http://", "https://", "#"))
-               and not (export.ROOT / target).exists()]
+    missing = []
+    for name in FRONT_PAGES:
+        page = export.ROOT / name
+        missing += [f"{name}: {target}"
+                    for target in re.findall(r"\]\(([^)#]+)\)", page.read_text(encoding="utf-8"))
+                    if not target.startswith(("http://", "https://", "#"))
+                    and not (page.parent / target).exists()]
     assert not missing, "README.md links to things that are not there:\n  " + \
                         "\n  ".join(missing)
 

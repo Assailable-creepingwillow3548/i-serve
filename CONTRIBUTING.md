@@ -15,8 +15,8 @@ one; the shape of the work is fixed, and this page says what it is.
   outranks derivation ([docs/SLO.md §9](docs/SLO.md#9-assumptions-and-how-they-get-validated)):
   a derivation a run has shown wrong is corrected in place, the §9 table gains
   the row that showed it, and nothing is quietly re-fitted.
-- **A documentation fix.** A dangling link, a stale state cell in the README's
-  layout table, a term used without an entry in
+- **A documentation fix.** A dangling link, a stale state cell in
+  [docs/layout.md](docs/layout.md), a term used without an entry in
   [docs/GLOSSARY.md](docs/GLOSSARY.md).
 
 ## What it is not

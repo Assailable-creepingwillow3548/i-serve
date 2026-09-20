@@ -8,15 +8,17 @@ date.
 ## What this is
 
 A slice of an LLM inference operator's platform — see `README.md` for the legend,
-the model choice and the layout. Scale is deliberately small: the point is that
-the categories of reasoning are the ones a real operator uses, and that every
-number is traceable to the run or the derivation that produced it.
+the model choice and the routes, and `docs/layout.md` for the tree. Scale is
+deliberately small: the point is that the categories of reasoning are the ones a
+real operator uses, and that every number is traceable to the run or the
+derivation that produced it.
 
 ## Source of truth
 
 | File | Authority over |
 |---|---|
-| `README.md` | project legend, model choice, repository layout, the route to the page |
+| `README.md` | project legend, model choice, the route to the page |
+| `docs/layout.md` | repository layout: the path-by-path table with its state column |
 | `docs/audience.md` | who the repository is for, what is real on `kind` and what is fixture, and the measured / derived / assumed split |
 | `docs/SLO.md` | targets, floors, concurrency ceiling, cost formula, empirical coefficients, and how each was derived |
 | `docs/GLOSSARY.md` | vocabulary and notation, including architectures that break the standard formulas |
@@ -38,7 +40,7 @@ and the other is wrong.
 
 ## Layout
 
-The path-by-path table is in `README.md`, with a state column. Directories map
+The path-by-path table is in `docs/layout.md`, with a state column. Directories map
 one-to-one onto the components this platform is built from; keep that mapping —
 the tree is meant to read as a map of the work.
 
